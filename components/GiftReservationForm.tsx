@@ -89,7 +89,7 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
 
   const handleCopySecretLink = async () => {
     if (!successData) return
-    const trackerUrl = `${window.location.origin}/reservations/${successData.reservation_id}?token=${successData.access_token}`
+    const trackerUrl = `${window.location.origin}/reservations/${successData.reservation_id}#token=${successData.access_token}`
     try {
       await navigator.clipboard.writeText(trackerUrl)
       setCopiedLink(true)
@@ -100,7 +100,7 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
   }
 
   if (successData) {
-    const reservationUrl = `/reservations/${successData.reservation_id}?token=${successData.access_token}`
+    const reservationUrl = `/reservations/${successData.reservation_id}#token=${successData.access_token}`
 
     return (
       <div className="text-center py-4 space-y-6">

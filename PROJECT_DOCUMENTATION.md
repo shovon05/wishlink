@@ -2,7 +2,7 @@
 
 > **Authoritative Technical Documentation & Codebase Analysis**  
 > **Target Application:** Wishlink (Next.js 16 + React 19 + Supabase + Tailwind CSS v4)  
-> **Workspace Directory:** `/Users/shovon/Developer/wishlink/local/my-app`  
+> **Project:** `Wishlink`  
 > **Document Status:** Complete & Production-Ready  
 
 ---

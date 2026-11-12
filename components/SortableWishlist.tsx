@@ -22,7 +22,13 @@ export interface WishlistItem {
   created_at?: string
 }
 
-export default function SortableWishlist({ items: initialItems }: { items: WishlistItem[] }) {
+export default function SortableWishlist({
+  items: initialItems,
+  surpriseMode = false,
+}: {
+  items: WishlistItem[]
+  surpriseMode?: boolean
+}) {
   const [items, setItems] = useState<WishlistItem[]>(initialItems)
   const supabase = createClient()
   const router = useRouter()
@@ -41,11 +47,19 @@ export default function SortableWishlist({ items: initialItems }: { items: Wishl
       const newItems = arrayMove(items, oldIndex, newIndex)
       setItems(newItems)
 
-      const updates = newItems.map((item, index) =>
-        supabase.from('wishlist_items').update({ sort_order: index }).eq('id', item.id)
-      )
+      // Single atomic batch RPC call
+      const { error: rpcError } = await supabase.rpc('reorder_wishlist_items', {
+        p_item_ids: newItems.map((i) => i.id)
+      })
 
-      await Promise.all(updates)
+      if (rpcError) {
+        // Fallback update if RPC is missing in an older migration environment
+        const updates = newItems.map((item, index) =>
+          supabase.from('wishlist_items').update({ sort_order: index }).eq('id', item.id)
+        )
+        await Promise.all(updates)
+      }
+
       router.refresh()
     }
   }
@@ -55,7 +69,7 @@ export default function SortableWishlist({ items: initialItems }: { items: Wishl
       <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-3">
           {items.map((item) => (
-            <SortableItem key={item.id} item={item} />
+            <SortableItem key={item.id} item={item} surpriseMode={surpriseMode} />
           ))}
         </div>
       </SortableContext>
@@ -63,7 +77,7 @@ export default function SortableWishlist({ items: initialItems }: { items: Wishl
   )
 }
 
-function SortableItem({ item }: { item: WishlistItem }) {
+function SortableItem({ item, surpriseMode }: { item: WishlistItem; surpriseMode?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
   const [isEditing, setIsEditing] = useState(false)
 
@@ -139,12 +153,20 @@ function SortableItem({ item }: { item: WishlistItem }) {
       )}
 
       {/* Actions */}
-      {!isEditing && <WishlistItemActions item={item} setIsEditing={setIsEditing} />}
+      {!isEditing && <WishlistItemActions item={item} setIsEditing={setIsEditing} surpriseMode={surpriseMode} />}
     </div>
   )
 }
 
-function WishlistItemActions({ item, setIsEditing }: { item: WishlistItem; setIsEditing: (v: boolean) => void }) {
+function WishlistItemActions({
+  item,
+  setIsEditing,
+  surpriseMode,
+}: {
+  item: WishlistItem
+  setIsEditing: (v: boolean) => void
+  surpriseMode?: boolean
+}) {
   const supabase = createClient()
   const router = useRouter()
 
@@ -155,7 +177,7 @@ function WishlistItemActions({ item, setIsEditing }: { item: WishlistItem; setIs
     }
   }
 
-  if (item.status === 'reserved' || item.status === 'gifted') {
+  if (!surpriseMode && (item.status === 'reserved' || item.status === 'gifted')) {
     return (
       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-spruce-light text-spruce border border-spruce/30 shrink-0">
         <CheckCircle2 className="w-3.5 h-3.5" />

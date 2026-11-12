@@ -17,7 +17,7 @@ const getProfile = cache(async (username: string) => {
     .from('profiles')
     .select('*')
     .ilike('username', username.replace(/[\\%_]/g, '\\$&'))
-    .single()
+    .maybeSingle()
 
   return profile
 })
@@ -169,7 +169,12 @@ export default async function PublicProfilePage({ params }: Props) {
                         <h3 className="font-semibold text-base text-ink line-clamp-2 leading-snug mb-1">
                           {item.title || 'Untitled Wishlist Item'}
                         </h3>
-                        {item.price ? (
+                        {item.price_amount ? (
+                          <p className="text-sm font-semibold text-slate-muted tabular-nums">
+                            {item.price_currency === 'USD' || !item.price_currency ? '$' : `${item.price_currency} `}
+                            {Number(item.price_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        ) : item.price ? (
                           <p className="text-sm font-medium text-slate-muted tabular-nums">
                             {item.price}
                           </p>

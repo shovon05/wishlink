@@ -12,6 +12,12 @@ export default async function AddressesPage() {
     .eq('user_id', user!.id)
     .order('priority', { ascending: true })
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('auto_share_address')
+    .eq('id', user!.id)
+    .maybeSingle()
+
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -30,7 +36,11 @@ export default async function AddressesPage() {
         </div>
       </div>
 
-      <SortableAddresses initialAddresses={addresses || []} userId={user!.id} />
+      <SortableAddresses
+        initialAddresses={addresses || []}
+        userId={user!.id}
+        initialAutoShare={profile?.auto_share_address ?? false}
+      />
     </div>
   )
 }

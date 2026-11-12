@@ -2,21 +2,28 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://wishlink-gamma.vercel.app'),
   title: {
-    default: 'Wishlink — Share What You Wish For',
-    template: '%s | Wishlink'
+    default: 'Wishlink — Everything you wish for. One private link.',
+    template: '%s | Wishlink',
   },
-  description: 'Create a tactile, privacy-first wishlist. Share one link in your bio and receive gifts without leaking your private address.',
+  description:
+    'Create your wishlist from any store. Share it with friends. Let them reserve gifts without ever exposing your home address.',
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: '/',
     siteName: 'Wishlink',
+    title: 'Wishlink — Everything you wish for. One private link.',
+    description:
+      'Create your wishlist from any store. Share it with friends. Let them reserve gifts without ever exposing your home address.',
   },
   twitter: {
     card: 'summary_large_image',
-  }
+    title: 'Wishlink — Everything you wish for. One private link.',
+    description:
+      'Create your wishlist from any store. Share it with friends. Let them reserve gifts without ever exposing your home address.',
+  },
 }
 
 export default function RootLayout({

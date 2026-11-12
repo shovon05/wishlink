@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Bell, MapPin, CheckCircle2, PackageOpen } from 'lucide-react'
+import { Bell, MapPin, CheckCircle2, PackageOpen, Gift, EyeOff } from 'lucide-react'
 
 interface AddressItem {
   id: string
@@ -39,6 +39,7 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationRecord[]>([])
   const [addresses, setAddresses] = useState<AddressItem[]>([])
   const [userId, setUserId] = useState<string | null>(null)
+  const [surpriseMode, setSurpriseMode] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // Modal states
@@ -52,6 +53,16 @@ export default function NotificationsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       setUserId(user.id)
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('surprise_mode')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (profile) {
+        setSurpriseMode(Boolean(profile.surprise_mode))
+      }
 
       const { data: addrs } = await supabase
         .from('addresses')
@@ -208,7 +219,12 @@ export default function NotificationsPage() {
                 <div className="flex items-start gap-4">
                   {/* Item Image */}
                   <div className="w-16 h-16 rounded-xl overflow-hidden relative border border-parchment bg-parchment-light shrink-0">
-                    {item?.image_url ? (
+                    {surpriseMode ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-spruce-light/50 text-spruce p-1 text-center">
+                        <Gift className="w-5 h-5 stroke-[1.8]" />
+                        <span className="text-[9px] font-bold uppercase tracking-tight mt-0.5">Secret</span>
+                      </div>
+                    ) : item?.image_url ? (
                       <Image
                         src={item.image_url}
                         alt={item.title || 'Gift item'}
@@ -240,9 +256,16 @@ export default function NotificationsPage() {
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-muted mt-1 truncate">
-                      Item: &ldquo;{item?.title || 'Untitled item'}&rdquo;
-                    </p>
+                    <div className="text-xs text-slate-muted mt-1 truncate">
+                      {surpriseMode ? (
+                        <span className="inline-flex items-center gap-1.5 text-spruce font-medium">
+                          <EyeOff className="w-3.5 h-3.5 text-spruce shrink-0" />
+                          <span>A gift on your wishlist (title hidden by Spoiler-Free Mode)</span>
+                        </span>
+                      ) : (
+                        <span>Item: &ldquo;{item?.title || 'Untitled item'}&rdquo;</span>
+                      )}
+                    </div>
 
                     {/* Actions */}
                     {res?.status === 'active' && (

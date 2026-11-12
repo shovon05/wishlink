@@ -2,138 +2,384 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { ShieldCheck, Gift, Check, CornerDownLeft } from 'lucide-react'
+import {
+  Link2,
+  Sparkles,
+  Gift,
+  Bell,
+  MapPin,
+  CheckCircle2,
+  ShieldCheck,
+  ChevronRight,
+  RotateCcw,
+  ExternalLink,
+  Copy,
+  Check,
+  Eye,
+  EyeOff
+} from 'lucide-react'
 
-const SAMPLE_ITEMS = [
+interface DemoStep {
+  step: number
+  title: string
+  subtitle: string
+  description: string
+}
+
+const STEPS: DemoStep[] = [
   {
-    url: 'https://shop.ceramiclab.com/artisan-kettle',
-    title: 'Matte Ceramic Pour-Over Kettle',
-    price: '$74.00',
-    category: 'Kitchenware',
-    image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80&w=800',
+    step: 1,
+    title: 'Add Any Store Link',
+    subtitle: 'From Amazon, Etsy, Apple, or boutique shops',
+    description: 'Paste the direct product URL. Wishlink automatically extracts the title, high-res photography, and current price without manual typing.',
   },
   {
-    url: 'https://linencompany.com/french-flax-duvet',
-    title: 'Washed French Flax Linen Duvet Cover',
-    price: '$185.00',
-    category: 'Home & Bedding',
-    image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80&w=800',
+    step: 2,
+    title: 'Instant Structured Wishcard',
+    subtitle: 'Organized with real-time price & category',
+    description: 'The product is neatly cataloged into your wishlist. You can reorganize items via drag-and-drop or mark favorites.',
   },
   {
-    url: 'https://soundcraft.fm/wireless-studio-phones',
-    title: 'Open-Back Studio Headphones',
-    price: '$199.00',
-    category: 'Audio',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800',
+    step: 3,
+    title: 'Gifter Reserves Item',
+    subtitle: 'Atomic lock prevents duplicate purchases',
+    description: 'When a friend decides to buy this gift, they reserve it with one click. The item locks in real time so no two people buy the same thing.',
+  },
+  {
+    step: 4,
+    title: 'Private Recipient Notification',
+    subtitle: 'Spoiler-Free mode protects the surprise',
+    description: 'You get an immediate in-app ping. If you turn on Spoiler-Free mode, the exact item remains a secret so your birthday stays magical!',
+  },
+  {
+    step: 5,
+    title: 'Choose Address to Share',
+    subtitle: 'Disclose 1-to-1 or auto-share your default',
+    description: 'You decide when and where to send the gift. Your residential address is never revealed to the public web.',
+  },
+  {
+    step: 6,
+    title: 'Address Revealed to Gifter',
+    subtitle: 'Hashed token ticket unlocks delivery details',
+    description: 'The gifter’s private tracker ticket unlocks the exact shipping destination with one-click copy to paste on the merchant site.',
   },
 ]
 
 export default function LandingHeroDemo() {
-  const [selectedIndex, setSelectedIndex] = useState(0)
-  const [isReserved, setIsReserved] = useState(false)
-  const [isSimulating, setIsSimulating] = useState(false)
+  const [currentStep, setCurrentStep] = useState(1)
+  const [spoilerMode, setSpoilerMode] = useState(false)
+  const [copiedAddress, setCopiedAddress] = useState(false)
 
-  const activeItem = SAMPLE_ITEMS[selectedIndex]
-
-  const handleSelect = (index: number) => {
-    if (index === selectedIndex) return
-    setIsSimulating(true)
-    setIsReserved(false)
-    setTimeout(() => {
-      setSelectedIndex(index)
-      setIsSimulating(false)
-    }, 250)
-  }
+  const activeStepMeta = STEPS[currentStep - 1]
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-4">
-      {/* Interactive Simulator Shell */}
-      <div className="paper-tag rounded-3xl p-5 sm:p-7 space-y-5 text-left">
-
+    <div className="w-full max-w-3xl mx-auto space-y-4">
+      {/* Container */}
+      <div className="paper-tag rounded-3xl p-5 sm:p-7 space-y-6 text-left shadow-xs">
+        
+        {/* Top Header Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-parchment pb-4">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-ribbon animate-pulse" />
-            <span className="text-xs font-semibold text-ink">Interactive Wishcard Simulator</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-spruce animate-pulse" />
+            <span className="text-xs font-semibold text-ink">Interactive Gifting Walkthrough</span>
+            <span className="text-[10px] font-bold text-slate-muted bg-parchment-light border border-parchment px-2 py-0.5 rounded-full uppercase">
+              Sample Data
+            </span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-slate-muted">
-            <span>Try sample links:</span>
-            {SAMPLE_ITEMS.map((item, idx) => (
+          {/* Step Badges */}
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+            {STEPS.map((s) => (
               <button
-                key={item.category}
+                key={s.step}
                 type="button"
-                onClick={() => handleSelect(idx)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  selectedIndex === idx
-                    ? 'bg-ink text-white'
-                    : 'bg-parchment-light hover:bg-parchment text-ink'
+                onClick={() => setCurrentStep(s.step)}
+                className={`w-7 h-7 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                  currentStep === s.step
+                    ? 'bg-ink text-white shadow-2xs'
+                    : currentStep > s.step
+                    ? 'bg-spruce-light text-spruce'
+                    : 'bg-parchment-light text-slate-muted hover:text-ink'
                 }`}
+                title={`Step ${s.step}: ${s.title}`}
               >
-                {item.category.split(' ')[0]}
+                {s.step}
               </button>
             ))}
           </div>
         </div>
 
-        {/* URL Input Bar Simulation */}
-        <div className="relative">
-          <div className="w-full px-4 py-3 rounded-2xl bg-parchment-light border border-parchment text-xs text-slate-muted font-mono flex items-center justify-between overflow-hidden">
-            <span className="truncate pr-4 text-ink/80">{activeItem.url}</span>
-            <span className="shrink-0 flex items-center gap-1 text-[11px] font-sans font-medium text-slate-muted bg-white px-2 py-0.5 rounded-md border border-parchment">
-              <CornerDownLeft className="w-3 h-3 text-slate-muted" />
-              Auto-scraped
-            </span>
+        {/* Step Context Banner */}
+        <div className="bg-cotton/60 rounded-2xl p-4 border border-parchment flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-ribbon">
+                Step {activeStepMeta.step} of 6
+              </span>
+              <span className="text-slate-muted text-xs">·</span>
+              <span className="text-xs font-semibold text-ink">{activeStepMeta.title}</span>
+            </div>
+            <p className="text-xs text-slate-muted">{activeStepMeta.description}</p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            {currentStep < 6 ? (
+              <button
+                type="button"
+                onClick={() => setCurrentStep((prev) => Math.min(6, prev + 1))}
+                className="inline-flex items-center gap-1 text-xs font-semibold bg-ink text-white px-3 py-1.5 rounded-xl hover:bg-ink/90 cursor-pointer shadow-2xs"
+              >
+                <span>Next Step</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setCurrentStep(1)}
+                className="inline-flex items-center gap-1 text-xs font-semibold bg-parchment-light border border-parchment text-ink px-3 py-1.5 rounded-xl hover:bg-parchment cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Restart</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Resulting Parcel Card */}
-        <div className={`transition-all duration-200 ${isSimulating ? 'opacity-40 scale-99' : 'opacity-100 scale-100'}`}>
-          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-parchment shadow-xs flex flex-col sm:flex-row items-center gap-5">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-xl overflow-hidden relative border border-parchment bg-parchment-light shadow-2xs">
-              <Image
-                src={activeItem.image}
-                alt={activeItem.title}
-                fill
-                sizes="112px"
-                className="object-cover"
-              />
-              <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-xs px-2 py-0.5 rounded-full text-[10px] font-medium text-ink border border-parchment">
-                {activeItem.category}
-              </span>
-            </div>
+        {/* Interactive Screen Visualization */}
+        <div className="min-h-[220px] flex items-center justify-center">
 
-            <div className="flex-1 space-y-2 text-center sm:text-left w-full">
-              <h4 className="font-semibold text-base text-ink leading-snug">
-                {activeItem.title}
-              </h4>
-              <p className="text-sm font-semibold text-slate-muted tabular-nums">
-                {activeItem.price}
-              </p>
-
-              <div className="pt-1 flex flex-col sm:flex-row items-center gap-2">
-                {!isReserved ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsReserved(true)}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-ribbon text-white hover:bg-ribbon-hover active:scale-98 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-xs"
-                  >
-                    <Gift className="w-3.5 h-3.5" />
-                    <span>Simulate Reservation</span>
-                  </button>
-                ) : (
-                  <div className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 bg-spruce-light text-spruce border border-spruce/30 px-4 py-2 rounded-xl text-xs font-medium">
-                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                    <span>Reserved · Address shared privately</span>
-                  </div>
-                )}
-
-                <span className="text-[11px] text-slate-muted flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-spruce" />
-                  Address hidden until reserved
-                </span>
+          {/* STEP 1: Paste Link */}
+          {currentStep === 1 && (
+            <div className="w-full space-y-4 animate-in fade-in duration-200">
+              <div className="text-xs font-medium text-slate-muted">Simulated Product URL Input:</div>
+              <div className="w-full p-3.5 rounded-2xl bg-white border border-parchment shadow-2xs flex items-center justify-between gap-3 font-mono text-xs text-ink/80">
+                <div className="flex items-center gap-2 truncate">
+                  <Link2 className="w-4 h-4 text-ribbon shrink-0" />
+                  <span className="truncate">https://store.ceramiclab.com/artisan-matte-pour-over-kettle</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(2)}
+                  className="shrink-0 bg-ink text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold hover:bg-ink/90 cursor-pointer"
+                >
+                  Extract
+                </button>
+              </div>
+              <div className="text-[11px] text-slate-muted flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-ribbon" />
+                <span>Schema.org JSON-LD and OpenGraph engine pulls price, high-res photo, and title automatically.</span>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* STEP 2: Extracted Product Card */}
+          {currentStep === 2 && (
+            <div className="w-full p-4 sm:p-5 rounded-2xl bg-white border border-parchment shadow-2xs flex flex-col sm:flex-row items-center gap-5 animate-in fade-in duration-200">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-xl overflow-hidden relative border border-parchment bg-parchment-light">
+                <Image
+                  src="https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80&w=800"
+                  alt="Ceramic Kettle"
+                  fill
+                  sizes="112px"
+                  className="object-cover"
+                />
+                <span className="absolute top-2 left-2 bg-white/95 px-2 py-0.5 rounded-full text-[10px] font-medium text-ink border border-parchment">
+                  Kitchen
+                </span>
+              </div>
+              <div className="flex-1 space-y-2 text-center sm:text-left w-full">
+                <h4 className="font-semibold text-base text-ink">
+                  Matte Ceramic Pour-Over Kettle
+                </h4>
+                <p className="text-sm font-semibold text-slate-muted tabular-nums">
+                  $74.00 USD
+                </p>
+                <div className="pt-2 flex items-center justify-center sm:justify-start gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(3)}
+                    className="inline-flex items-center gap-1.5 bg-ink text-white px-4 py-2 rounded-xl text-xs font-semibold hover:bg-ink/90 cursor-pointer"
+                  >
+                    <Gift className="w-3.5 h-3.5" />
+                    <span>See Gifter&apos;s View →</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: Gifter Reserves Item */}
+          {currentStep === 3 && (
+            <div className="w-full p-5 rounded-2xl bg-white border border-parchment shadow-2xs space-y-4 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-parchment pb-3">
+                <span className="text-xs font-semibold text-ink">Gifter View (on your public profile)</span>
+                <span className="text-[11px] text-spruce bg-spruce-light px-2.5 py-0.5 rounded-full font-medium">
+                  Address is hidden
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h4 className="font-semibold text-sm text-ink">Matte Ceramic Pour-Over Kettle</h4>
+                  <p className="text-xs text-slate-muted">$74.00 USD · Reserved exclusively for this gift</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(4)}
+                  className="bg-ribbon hover:bg-ribbon-hover text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer shrink-0 shadow-2xs"
+                >
+                  Reserve This Gift
+                </button>
+              </div>
+
+              <div className="p-3 rounded-xl bg-cotton/70 border border-parchment text-[11px] text-slate-muted">
+                🛡️ Once reserved, an atomic database lock prevents anyone else from purchasing a duplicate.
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: Recipient Notification & Spoiler-Free Mode */}
+          {currentStep === 4 && (
+            <div className="w-full p-5 rounded-2xl bg-white border border-parchment shadow-2xs space-y-4 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-parchment pb-3">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-ribbon" />
+                  <span className="text-xs font-semibold text-ink">Your Dashboard Notification</span>
+                </div>
+
+                {/* Spoiler-Free Toggle Demo */}
+                <button
+                  type="button"
+                  onClick={() => setSpoilerMode(!spoilerMode)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-parchment bg-parchment-light hover:bg-parchment cursor-pointer"
+                >
+                  {spoilerMode ? <EyeOff className="w-3 h-3 text-ribbon" /> : <Eye className="w-3 h-3 text-slate-muted" />}
+                  <span>{spoilerMode ? 'Spoiler Mode: ON' : 'Spoiler Mode: OFF'}</span>
+                </button>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-cotton/60 border border-parchment flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-spruce-light text-spruce flex items-center justify-center shrink-0">
+                  <Gift className="w-4 h-4" />
+                </div>
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-ink">Someone wants to gift you!</p>
+                    <span className="text-[10px] text-slate-muted">Just now</span>
+                  </div>
+                  <p className="text-xs text-slate-muted">
+                    {spoilerMode
+                      ? 'A gift from your wishlist (hidden to keep it a surprise for your event).'
+                      : 'Item: "Matte Ceramic Pour-Over Kettle" — choose where to ship it.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(5)}
+                  className="bg-ink text-white px-4 py-2 rounded-xl text-xs font-semibold hover:bg-ink/90 cursor-pointer"
+                >
+                  Choose Delivery Address →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 5: Recipient Approves Address */}
+          {currentStep === 5 && (
+            <div className="w-full p-5 rounded-2xl bg-white border border-parchment shadow-2xs space-y-4 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-parchment pb-3">
+                <span className="text-xs font-semibold text-ink">Select Private Destination</span>
+                <span className="text-[11px] text-slate-muted">Step 5 of 6</span>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-ink block">Which address should we share?</label>
+                <div className="p-3 rounded-xl border-2 border-spruce bg-spruce-light/30 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-spruce shrink-0" />
+                    <div>
+                      <span className="font-semibold text-ink">Primary Home (Default)</span>
+                      <p className="text-[11px] text-slate-muted">742 Evergreen Terrace, Springfield OR 97477</p>
+                    </div>
+                  </div>
+                  <CheckCircle2 className="w-4 h-4 text-spruce shrink-0" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-[11px] text-slate-muted">
+                  🔒 Gifter receives address via single-use encrypted token link.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(6)}
+                  className="bg-spruce hover:bg-spruce/90 text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer shadow-2xs"
+                >
+                  Share Address Privately
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 6: Delivery Tracking Revealed to Gifter */}
+          {currentStep === 6 && (
+            <div className="w-full p-5 rounded-2xl bg-white border border-parchment shadow-2xs space-y-4 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-parchment pb-3">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-spruce" />
+                  <span className="text-xs font-semibold text-ink">Gifter&apos;s Private Delivery Ticket</span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-muted">#token=a8f4c9...</span>
+              </div>
+
+              <div className="p-4 rounded-xl bg-cotton/70 border border-parchment space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-ink">Recipient Shipping Address:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCopiedAddress(true)
+                      setTimeout(() => setCopiedAddress(false), 2000)
+                    }}
+                    className="inline-flex items-center gap-1 text-[11px] text-ribbon hover:text-ribbon-hover cursor-pointer"
+                  >
+                    {copiedAddress ? <Check className="w-3 h-3 text-spruce" /> : <Copy className="w-3 h-3" />}
+                    <span>{copiedAddress ? 'Copied' : 'Copy Address'}</span>
+                  </button>
+                </div>
+                <p className="text-xs font-medium text-ink bg-white p-2.5 rounded-lg border border-parchment">
+                  Alex Rivera<br />
+                  742 Evergreen Terrace, Apt 4B<br />
+                  Springfield, OR 97477
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <a
+                  href="https://store.ceramiclab.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-slate-muted hover:text-ink font-medium"
+                >
+                  <span>Go buy on merchant site</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(1)}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-ink hover:text-slate-muted cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Try again from start</span>
+                </button>
+              </div>
+            </div>
+          )}
+
         </div>
 
       </div>

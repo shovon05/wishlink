@@ -15,7 +15,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .from('profiles')
     .select('username, pet_name')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   if (!profile || profile.username?.startsWith('user_')) {
     redirect('/onboarding')
