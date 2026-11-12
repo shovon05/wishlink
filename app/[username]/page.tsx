@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import ShareProfileButton from '@/components/ShareProfileButton'
 import { cache } from 'react'
-import { ShieldCheck, Gift, CheckCircle2, PackageOpen } from 'lucide-react'
+import { ShieldCheck, Gift, CheckCircle2, PackageOpen, Sparkles } from 'lucide-react'
 
 type Props = {
   params: Promise<{ username: string }>
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${petName}'s Wishlist — Wishlink`,
-    description: `Browse ${petName}'s registry and reserve a gift safely without awkward address questions.`,
+    description: `Browse ${petName}'s private registry and reserve a gift safely without awkward address questions.`,
     openGraph: {
       title: `${petName}'s Wishlist on Wishlink`,
       description: `Browse ${petName}'s registry and reserve a gift safely.`,
@@ -68,11 +68,11 @@ export default async function PublicProfilePage({ params }: Props) {
   const availableCount = items?.filter((i) => i.status === 'available').length || 0
 
   return (
-    <main className="min-h-screen bg-cotton pb-20">
+    <main className="min-h-screen bg-cotton pb-20 selection:bg-blush/50 selection:text-ink">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16">
 
         {/* Profile Registry Header */}
-        <header className="paper-tag rounded-3xl p-6 sm:p-8 mb-8 text-center sm:text-left flex flex-col sm:flex-row items-center sm:items-start gap-6 relative overflow-hidden">
+        <header className="paper-tag rounded-3xl p-6 sm:p-8 mb-8 text-center sm:text-left flex flex-col sm:flex-row items-center sm:items-start gap-6 relative overflow-hidden bg-white border border-parchment shadow-xs">
           <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-parchment-light border border-parchment shrink-0 shadow-xs">
             <Image
               src={avatarUrl}
@@ -98,12 +98,12 @@ export default async function PublicProfilePage({ params }: Props) {
               </div>
             </div>
 
-            <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-slate-muted">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-parchment-light border border-parchment text-ink font-medium">
+            <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2.5 text-xs text-slate-muted">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-parchment-light border border-parchment text-ink font-semibold">
                 <Gift className="w-3.5 h-3.5 text-ribbon" />
-                {availableCount} {availableCount === 1 ? 'item available' : 'items available'}
+                {availableCount} {availableCount === 1 ? 'wish available' : 'wishes available'}
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-spruce-light/60 border border-spruce/20 text-spruce font-medium">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-spruce-light border border-spruce/30 text-spruce font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5 text-spruce" />
                 Zero-leak delivery address privacy
               </span>
@@ -114,9 +114,15 @@ export default async function PublicProfilePage({ params }: Props) {
         {/* Registry Items Grid */}
         <section aria-labelledby="registry-heading">
           <div className="flex items-center justify-between mb-5 px-1">
-            <h2 id="registry-heading" className="text-lg font-serif font-bold text-ink">
-              Wishlist Catalog
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 id="registry-heading" className="text-lg font-serif font-bold text-ink">
+                Wishlist Catalog
+              </h2>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-caramel-light text-caramel border border-caramel/30">
+                <Sparkles className="w-3 h-3 text-caramel" />
+                <span>Curated</span>
+              </span>
+            </div>
             <span className="text-xs text-slate-muted">
               {items?.length || 0} {items?.length === 1 ? 'total item' : 'total items'}
             </span>
@@ -130,7 +136,7 @@ export default async function PublicProfilePage({ params }: Props) {
                 return (
                   <article
                     key={item.id}
-                    className="paper-tag rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-150 hover:shadow-md"
+                    className="paper-tag rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-150 hover:border-caramel/40 hover:shadow-md bg-white border border-parchment"
                   >
                     <div>
                       {/* Product Image */}
@@ -151,13 +157,13 @@ export default async function PublicProfilePage({ params }: Props) {
                         )}
 
                         {item.category && (
-                          <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[11px] font-medium text-ink border border-parchment shadow-2xs">
+                          <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-ink border border-parchment shadow-2xs">
                             {item.category}
                           </div>
                         )}
 
                         {!isAvailable && (
-                          <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[11px] font-medium text-spruce border border-spruce/20 shadow-2xs flex items-center gap-1">
+                          <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-spruce border border-spruce/30 shadow-2xs flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3 text-spruce" />
                             Reserved
                           </div>
@@ -166,7 +172,7 @@ export default async function PublicProfilePage({ params }: Props) {
 
                       {/* Item Details */}
                       <div className="p-4 sm:p-5">
-                        <h3 className="font-semibold text-base text-ink line-clamp-2 leading-snug mb-1">
+                        <h3 className="font-serif font-bold text-base text-ink line-clamp-2 leading-snug mb-1">
                           {item.title || 'Untitled Wishlist Item'}
                         </h3>
                         {item.price_amount ? (
@@ -189,13 +195,13 @@ export default async function PublicProfilePage({ params }: Props) {
                       {isAvailable ? (
                         <Link
                           href={`/${profile.username}/gift/${item.id}`}
-                          className="w-full flex items-center justify-center gap-2 bg-ribbon text-white hover:bg-ribbon-hover active:scale-98 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-150 shadow-xs cursor-pointer"
+                          className="w-full posh-button-rose flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold cursor-pointer"
                         >
                           <Gift className="w-4 h-4 stroke-[2.2]" />
                           <span>Reserve gift</span>
                         </Link>
                       ) : (
-                        <div className="w-full text-center py-2.5 px-4 rounded-xl text-xs font-medium bg-spruce-light text-spruce border border-spruce/20 flex items-center justify-center gap-1.5">
+                        <div className="w-full text-center py-2.5 px-4 rounded-xl text-xs font-semibold bg-spruce-light text-spruce border border-spruce/30 flex items-center justify-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>A gifter has reserved this</span>
                         </div>
@@ -206,9 +212,9 @@ export default async function PublicProfilePage({ params }: Props) {
               })}
             </div>
           ) : (
-            <div className="paper-tag rounded-3xl p-12 text-center max-w-md mx-auto my-8 space-y-3">
-              <PackageOpen className="w-10 h-10 text-slate-muted mx-auto stroke-1" />
-              <h3 className="text-lg font-serif font-semibold text-ink">No items listed yet</h3>
+            <div className="paper-tag rounded-3xl p-12 text-center max-w-md mx-auto my-8 space-y-3 bg-white border border-parchment">
+              <PackageOpen className="w-10 h-10 text-caramel mx-auto stroke-1" />
+              <h3 className="text-lg font-serif font-bold text-ink">No items listed yet</h3>
               <p className="text-sm text-slate-muted">
                 {petName} hasn&apos;t added any items to this registry yet. Check back soon!
               </p>
@@ -217,12 +223,12 @@ export default async function PublicProfilePage({ params }: Props) {
         </section>
 
         {/* Footer */}
-        <footer className="mt-16 text-center text-xs text-slate-muted/70 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 border-t border-parchment pt-8">
-          <span>Wishlink Registry</span>
-          <span className="hidden sm:inline">·</span>
+        <footer className="mt-16 text-center text-xs text-slate-muted flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 border-t border-parchment pt-8">
+          <span className="font-serif font-bold text-ink">Wishlink Registry</span>
+          <span className="hidden sm:inline text-parchment">·</span>
           <span>Privacy-first gift coordination</span>
-          <span className="hidden sm:inline">·</span>
-          <Link href="/" className="text-ink hover:underline">
+          <span className="hidden sm:inline text-parchment">·</span>
+          <Link href="/" className="text-caramel hover:text-mocha font-medium hover:underline">
             Create your own wishlist
           </Link>
         </footer>

@@ -24,11 +24,11 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-cotton px-4 py-12">
-      <div className="w-full max-w-md paper-tag rounded-3xl p-6 sm:p-8 space-y-6">
+    <main className="flex min-h-screen items-center justify-center bg-cotton px-4 py-12 selection:bg-blush/50 selection:text-ink">
+      <div className="w-full max-w-md paper-tag rounded-3xl p-6 sm:p-9 space-y-6 bg-white border border-parchment shadow-md">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-parchment-light border border-parchment flex items-center justify-center mx-auto text-ink shadow-2xs">
-            <Sparkles className="w-6 h-6 text-ribbon stroke-[2.2]" />
+          <div className="w-14 h-14 rounded-2xl bg-caramel-light border border-caramel/30 flex items-center justify-center mx-auto text-caramel shadow-xs">
+            <Sparkles className="w-7 h-7 text-caramel stroke-[2.2]" />
           </div>
           <h1 className="text-2xl font-serif font-bold text-ink">
             Claim Your Unique Handle

@@ -107,24 +107,24 @@ export default function SecurityPage() {
       </div>
 
       {errorMsg && (
-        <div className="p-3.5 rounded-xl bg-ribbon-light border border-ribbon/20 text-ribbon text-xs flex items-start gap-2">
+        <div className="p-3.5 rounded-2xl bg-ribbon-light border border-ribbon/30 text-ribbon text-xs flex items-start gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {successMsg && (
-        <div className="p-3.5 rounded-xl bg-spruce-light border border-spruce/30 text-spruce text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-2xl bg-spruce-light border border-spruce/30 text-spruce text-xs flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {/* 1. Passkey Section */}
-      <div className="paper-tag rounded-3xl p-6 sm:p-7 space-y-5">
+      <div className="paper-tag rounded-3xl p-6 sm:p-7 space-y-5 bg-white border border-parchment">
         <div>
           <h2 className="text-base font-serif font-bold text-ink flex items-center gap-2">
-            <KeyRound className="w-5 h-5 text-ink stroke-[2.2]" />
+            <KeyRound className="w-5 h-5 text-caramel stroke-[2.2]" />
             <span>Biometric Passkeys (Passwordless)</span>
           </h2>
           <p className="text-xs text-slate-muted mt-0.5 leading-relaxed">
@@ -137,7 +137,7 @@ export default function SecurityPage() {
             onClick={handleAddPasskey}
             disabled={loading}
             type="button"
-            className="inline-flex items-center gap-1.5 bg-ink text-white hover:bg-ink/90 active:scale-98 disabled:opacity-50 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
+            className="posh-button-primary inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 cursor-pointer shadow-xs"
           >
             {loading ? (
               <>
@@ -159,7 +159,7 @@ export default function SecurityPage() {
           </span>
 
           {passkeys.length === 0 ? (
-            <p className="text-xs text-slate-muted bg-parchment-light/60 p-4 rounded-2xl border border-parchment">
+            <p className="text-xs text-slate-muted bg-parchment-light/40 p-4 rounded-2xl border border-parchment">
               No passkeys enrolled on this account yet. Add one above for instant, passwordless sign-in.
             </p>
           ) : (
@@ -167,13 +167,13 @@ export default function SecurityPage() {
               {passkeys.map((pk) => (
                 <li
                   key={pk.id}
-                  className="flex justify-between items-center bg-white p-3.5 rounded-2xl border border-parchment shadow-2xs"
+                  className="flex justify-between items-center bg-white p-3.5 rounded-2xl border border-parchment shadow-2xs hover:border-caramel/30 transition-colors"
                 >
                   <div className="space-y-0.5">
                     <p className="text-xs font-semibold text-ink">
                       {pk.friendly_name || 'Biometric Credential'}
                     </p>
-                    <p className="text-[10px] text-slate-muted">
+                    <p className="text-[10px] text-slate-muted font-mono">
                       Enrolled on {new Date(pk.created_at).toLocaleDateString()}
                     </p>
                   </div>

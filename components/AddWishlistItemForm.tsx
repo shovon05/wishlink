@@ -91,7 +91,6 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
       return
     }
 
-    // Parse numeric price amount if available
     const numericAmount = parseFloat(sanitizedPrice.replace(/[^0-9.]/g, ''))
     const priceAmount = !isNaN(numericAmount) && numericAmount > 0 ? numericAmount : null
 
@@ -140,11 +139,11 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h2 className="text-base font-semibold text-ink">
+          <h2 className="text-base font-serif font-bold text-ink">
             Add to Wishlist
           </h2>
           <p className="text-xs text-slate-muted">
-            Paste any link from an online store, or enter items manually.
+            Paste any link from an online store, or enter details manually.
           </p>
         </div>
 
@@ -152,23 +151,23 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
           <button
             type="button"
             onClick={handleManualOpen}
-            className="self-start sm:self-auto text-xs text-slate-muted hover:text-ink font-medium underline underline-offset-4 cursor-pointer"
+            className="self-start sm:self-auto text-xs text-caramel hover:text-mocha font-semibold transition-colors cursor-pointer"
           >
-            Or add without link
+            + Enter details manually
           </button>
         )}
       </div>
 
       {formError && (
-        <div className="p-3 rounded-xl bg-ribbon-light border border-ribbon/20 text-ribbon text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-2xl bg-ribbon-light border border-ribbon/30 text-ribbon text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{formError}</span>
         </div>
       )}
 
       {infoNotice && (
-        <div className="p-3 rounded-xl bg-parchment-light border border-parchment text-slate-muted text-xs flex items-center gap-2">
-          <Info className="w-4 h-4 text-ink shrink-0" />
+        <div className="p-3.5 rounded-2xl bg-parchment-light border border-parchment text-slate-muted text-xs flex items-center gap-2">
+          <Info className="w-4 h-4 text-caramel shrink-0" />
           <span>{infoNotice}</span>
         </div>
       )}
@@ -182,16 +181,16 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="Paste product link (Amazon, Etsy, Apple, or local boutique)..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-parchment text-sm bg-white text-ink placeholder:text-slate-muted/60 focus:outline-none focus:border-ink transition-colors"
+              className="w-full pl-9 pr-4 py-3 rounded-2xl border border-parchment text-sm bg-white text-ink placeholder:text-slate-muted/60 focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel transition-all shadow-2xs"
             />
-            <Link2 className="w-4 h-4 text-slate-muted absolute left-3 top-3.5" />
+            <Link2 className="w-4 h-4 text-caramel absolute left-3 top-3.5" />
           </div>
 
           <button
             onClick={fetchDetails}
             disabled={loading || !url.trim()}
             type="button"
-            className="inline-flex items-center justify-center gap-2 bg-ink text-white hover:bg-ink/90 active:scale-98 disabled:opacity-40 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer shrink-0"
+            className="posh-button-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-xs font-semibold disabled:opacity-40 cursor-pointer shrink-0"
           >
             {loading ? (
               <>
@@ -200,7 +199,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
               </>
             ) : (
               <>
-                <Sparkles className="w-3.5 h-3.5 text-ribbon" />
+                <Sparkles className="w-3.5 h-3.5 text-blush" />
                 <span>Fetch Details</span>
               </>
             )}
@@ -209,8 +208,8 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
       )}
 
       {preview && (
-        <div className="mt-2 p-5 rounded-2xl bg-parchment-light/60 border border-parchment flex flex-col sm:flex-row gap-5 items-start">
-          <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-xl overflow-hidden relative border border-parchment bg-white shadow-2xs">
+        <div className="mt-2 p-5 rounded-3xl bg-parchment-light/40 border border-parchment flex flex-col sm:flex-row gap-5 items-start">
+          <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-2xl overflow-hidden relative border border-parchment bg-white shadow-2xs">
             {preview.image ? (
               <Image
                 src={preview.image}
@@ -227,7 +226,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
             )}
           </div>
 
-          <div className="flex-1 space-y-3 w-full">
+          <div className="flex-1 space-y-3.5 w-full">
             <div>
               <label className="text-[11px] font-semibold text-slate-muted block mb-1">
                 Product Title *
@@ -239,7 +238,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                 value={preview.title}
                 onChange={(e) => setPreview({ ...preview, title: e.target.value })}
                 placeholder="e.g. Linen Bedding Set"
-                className="w-full px-3 py-2 rounded-xl border border-parchment text-sm bg-white text-ink focus:outline-none focus:border-ink"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-parchment text-sm bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel shadow-2xs"
               />
             </div>
 
@@ -253,7 +252,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://..."
-                className="w-full px-3 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-ink font-mono"
+                className="w-full px-3.5 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel font-mono"
               />
             </div>
 
@@ -268,7 +267,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                   value={preview.price}
                   onChange={(e) => setPreview({ ...preview, price: e.target.value })}
                   placeholder="e.g. $45.00"
-                  className="w-full px-3 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-ink tabular-nums"
+                  className="w-full px-3.5 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel tabular-nums"
                 />
               </div>
 
@@ -279,7 +278,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                 <select
                   value={preview.currency}
                   onChange={(e) => setPreview({ ...preview, currency: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-ink cursor-pointer"
+                  className="w-full px-3 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer"
                 >
                   {CURRENCIES.map((cur) => (
                     <option key={cur} value={cur}>{cur}</option>
@@ -294,7 +293,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                 <select
                   value={preview.category}
                   onChange={(e) => setPreview({ ...preview, category: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-ink cursor-pointer"
+                  className="w-full px-3 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer"
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>{cat}</option>
@@ -313,11 +312,11 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                 value={preview.image}
                 onChange={(e) => setPreview({ ...preview, image: e.target.value })}
                 placeholder="https://images... (paste image link)"
-                className="w-full px-3 py-1.5 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-ink font-mono"
+                className="w-full px-3.5 py-1.5 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel font-mono"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-parchment">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-parchment">
               <button
                 type="button"
                 onClick={() => {
@@ -325,7 +324,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                   setFormError('')
                   setInfoNotice('')
                 }}
-                className="px-3.5 py-1.5 text-xs font-medium text-slate-muted hover:text-ink transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-slate-muted hover:text-ink transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -333,7 +332,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="inline-flex items-center gap-1.5 bg-ribbon text-white hover:bg-ribbon-hover active:scale-98 disabled:opacity-50 px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                className="posh-button-rose inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 cursor-pointer"
               >
                 {saving ? (
                   <>

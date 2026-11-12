@@ -114,11 +114,11 @@ export default function OnboardingForm({ userId, petName }: { userId: string, pe
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label htmlFor="username" className="block text-xs font-semibold text-ink mb-1.5">
+        <label htmlFor="username" className="block text-xs font-serif font-bold text-ink mb-1.5">
           Your Wishlink URL
         </label>
-        <div className="relative flex items-center rounded-2xl border border-parchment bg-white overflow-hidden shadow-2xs focus-within:border-ink transition-colors">
-          <span className="pl-3.5 pr-1 text-xs font-medium text-slate-muted select-none">
+        <div className="relative flex items-center rounded-2xl border border-parchment bg-white overflow-hidden shadow-2xs focus-within:border-caramel focus-within:ring-1 focus-within:ring-caramel transition-colors">
+          <span className="pl-3.5 pr-1 text-xs font-semibold text-slate-muted select-none">
             wishlink.me/
           </span>
           <input
@@ -134,15 +134,15 @@ export default function OnboardingForm({ userId, petName }: { userId: string, pe
           />
 
           <div className="pr-3.5 flex items-center">
-            {isChecking && <Loader2 className="w-4 h-4 animate-spin text-slate-muted" />}
+            {isChecking && <Loader2 className="w-4 h-4 animate-spin text-caramel" />}
             {!isChecking && isAvailable === true && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-spruce bg-spruce-light px-2 py-0.5 rounded-full border border-spruce/30">
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-spruce bg-spruce-light px-2.5 py-0.5 rounded-full border border-spruce/30">
                 <Check className="w-3 h-3 stroke-[2.5]" />
                 Available
               </span>
             )}
             {!isChecking && isAvailable === false && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ribbon bg-ribbon-light px-2 py-0.5 rounded-full border border-ribbon/30">
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-ribbon bg-ribbon-light px-2.5 py-0.5 rounded-full border border-ribbon/30">
                 <X className="w-3 h-3 stroke-[2.5]" />
                 Taken
               </span>
@@ -151,7 +151,7 @@ export default function OnboardingForm({ userId, petName }: { userId: string, pe
         </div>
 
         {error && (
-          <p className="mt-1.5 text-xs text-ribbon">
+          <p className="mt-1.5 text-xs text-ribbon font-medium">
             {error}
           </p>
         )}
@@ -159,7 +159,7 @@ export default function OnboardingForm({ userId, petName }: { userId: string, pe
 
       {suggestions.length > 0 && (
         <div className="space-y-1.5">
-          <span className="text-[11px] font-medium text-slate-muted block">
+          <span className="text-[11px] font-semibold text-slate-muted block">
             Suggested handles:
           </span>
           <div className="flex flex-wrap gap-2">
@@ -168,7 +168,7 @@ export default function OnboardingForm({ userId, petName }: { userId: string, pe
                 key={suggestion}
                 type="button"
                 onClick={() => setUsername(suggestion)}
-                className="px-3 py-1 text-xs font-medium bg-parchment-light border border-parchment hover:border-slate-muted/40 text-ink rounded-full transition-all cursor-pointer"
+                className="px-3 py-1 text-xs font-semibold bg-parchment-light border border-parchment hover:border-caramel/40 text-ink rounded-full transition-all cursor-pointer shadow-2xs"
               >
                 @{suggestion}
               </button>
@@ -180,7 +180,7 @@ export default function OnboardingForm({ userId, petName }: { userId: string, pe
       <button
         type="submit"
         disabled={!isAvailable || !!error || isSubmitting}
-        className="w-full inline-flex items-center justify-center gap-2 bg-ink text-white hover:bg-ink/90 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed py-3.5 px-4 rounded-xl text-sm font-semibold transition-all shadow-xs cursor-pointer"
+        className="posh-button-primary w-full inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-sm font-semibold transition-all shadow-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {isSubmitting ? (
           <>

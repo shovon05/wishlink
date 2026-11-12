@@ -148,8 +148,8 @@ export default function SortableAddresses({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-spruce" />
-              <h3 className="font-semibold text-sm text-ink">Auto-Share Default Address</h3>
+              <Zap className="w-4 h-4 text-caramel" />
+              <h3 className="font-serif font-bold text-sm text-ink">Auto-Share Default Address</h3>
             </div>
             <p className="text-xs text-slate-muted">
               Instantly share your top-priority address with gifters when they reserve, eliminating waiting time.
@@ -162,8 +162,8 @@ export default function SortableAddresses({
             onClick={handleToggleAutoShare}
             className={`self-start sm:self-auto px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
               autoShare
-                ? 'bg-spruce text-white shadow-2xs hover:bg-spruce/90'
-                : 'bg-parchment-light text-slate-muted hover:text-ink hover:bg-parchment'
+                ? 'posh-button-primary shadow-2xs'
+                : 'bg-parchment-light text-slate-muted hover:text-ink hover:bg-parchment border border-parchment'
             }`}
           >
             {savingAutoShare ? (
@@ -176,7 +176,7 @@ export default function SortableAddresses({
         </div>
 
         {autoShareMessage && (
-          <div className="p-3 rounded-xl bg-spruce-light/60 border border-spruce/30 text-spruce text-xs flex items-center gap-2 animate-in fade-in duration-200">
+          <div className="p-3.5 rounded-2xl bg-spruce-light border border-spruce/30 text-spruce text-xs flex items-center gap-2 animate-in fade-in duration-200">
             <ShieldCheck className="w-4 h-4 shrink-0 text-spruce" />
             <span>{autoShareMessage}</span>
           </div>
@@ -184,7 +184,7 @@ export default function SortableAddresses({
       </div>
 
       {/* Add New Address Card */}
-      <form onSubmit={handleAdd} className="paper-tag rounded-3xl p-6 sm:p-7 space-y-4">
+      <form onSubmit={handleAdd} className="paper-tag rounded-3xl p-6 sm:p-7 space-y-4 bg-white border border-parchment">
         <div>
           <h3 className="text-base font-serif font-bold text-ink">
             Add Delivery Address
@@ -195,7 +195,7 @@ export default function SortableAddresses({
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-ribbon-light border border-ribbon/20 text-ribbon text-xs">
+          <div className="p-3.5 rounded-2xl bg-ribbon-light border border-ribbon/30 text-ribbon text-xs">
             {error}
           </div>
         )}
@@ -208,7 +208,7 @@ export default function SortableAddresses({
             <select
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              className="w-full px-3.5 py-2.5 border border-parchment rounded-xl text-xs bg-white text-ink focus:outline-none focus:border-ink cursor-pointer"
+              className="w-full px-3.5 py-2.5 border border-parchment rounded-xl text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer"
             >
               {LABELS.map(l => (
                 <option key={l} value={l}>{l}</option>
@@ -227,7 +227,7 @@ export default function SortableAddresses({
               onChange={(e) => setFullAddress(e.target.value)}
               placeholder="e.g. 742 Evergreen Terrace, Apt 4B, Springfield OR 97477 (Gate code #1234)"
               rows={2}
-              className="w-full px-3.5 py-2 border border-parchment rounded-xl text-xs bg-white text-ink placeholder:text-slate-muted/60 focus:outline-none focus:border-ink resize-none"
+              className="w-full px-3.5 py-2 border border-parchment rounded-xl text-xs bg-white text-ink placeholder:text-slate-muted/60 focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel resize-none"
             />
           </div>
         </div>
@@ -236,7 +236,7 @@ export default function SortableAddresses({
           <button
             type="submit"
             disabled={loading || !fullAddress.trim()}
-            className="inline-flex items-center gap-1.5 bg-ink text-white hover:bg-ink/90 active:scale-98 disabled:opacity-40 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
+            className="posh-button-primary inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-40 cursor-pointer"
           >
             {loading ? (
               <>
@@ -256,7 +256,7 @@ export default function SortableAddresses({
       {/* Address List */}
       <section className="space-y-3">
         <div className="flex items-center justify-between px-1">
-          <h3 className="text-sm font-semibold text-ink">
+          <h3 className="text-sm font-serif font-bold text-ink">
             Saved Addresses ({addresses.length})
           </h3>
           <span className="text-xs text-slate-muted">
@@ -265,8 +265,8 @@ export default function SortableAddresses({
         </div>
 
         {addresses.length === 0 ? (
-          <div className="paper-tag rounded-3xl p-10 text-center space-y-2">
-            <MapPin className="w-8 h-8 text-slate-muted mx-auto stroke-1" />
+          <div className="paper-tag rounded-3xl p-10 text-center space-y-2 bg-white border border-parchment">
+            <MapPin className="w-8 h-8 text-caramel mx-auto stroke-1" />
             <p className="text-xs text-slate-muted">No addresses saved yet. Add one above to enable gift disclosures.</p>
           </div>
         ) : (
@@ -310,8 +310,8 @@ function SortableAddressItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`paper-tag rounded-2xl p-4 flex items-start gap-3 transition-shadow ${
-        isDragging ? 'shadow-xl ring-2 ring-ink/10 opacity-95' : 'hover:shadow-xs'
+      className={`paper-tag rounded-2xl p-4 flex items-start gap-3 transition-shadow bg-white border border-parchment ${
+        isDragging ? 'shadow-xl ring-2 ring-caramel/40 opacity-95' : 'hover:border-caramel/30 hover:shadow-xs'
       }`}
     >
       <button

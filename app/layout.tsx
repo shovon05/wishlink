@@ -2,27 +2,27 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://wishlink-gamma.vercel.app'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://wishlink.me'),
   title: {
-    default: 'Wishlink — Everything you wish for. One private link.',
+    default: 'Wishlink — Curate Everything. Keep Your Privacy.',
     template: '%s | Wishlink',
   },
   description:
-    'Create your wishlist from any store. Share it with friends. Let them reserve gifts without ever exposing your home address.',
+    'Curate gifts from any boutique or store worldwide. Share your bespoke private link. Friends reserve gifts seamlessly with zero exposed personal addresses.',
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: '/',
     siteName: 'Wishlink',
-    title: 'Wishlink — Everything you wish for. One private link.',
+    title: 'Wishlink — Curate Everything. Keep Your Privacy.',
     description:
-      'Create your wishlist from any store. Share it with friends. Let them reserve gifts without ever exposing your home address.',
+      'Curate gifts from any boutique or store worldwide. Share your bespoke private link. Friends reserve gifts seamlessly with zero exposed personal addresses.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Wishlink — Everything you wish for. One private link.',
+    title: 'Wishlink — Curate Everything. Keep Your Privacy.',
     description:
-      'Create your wishlist from any store. Share it with friends. Let them reserve gifts without ever exposing your home address.',
+      'Curate gifts from any boutique or store worldwide. Share your bespoke private link. Friends reserve gifts seamlessly with zero exposed personal addresses.',
   },
 }
 
@@ -33,7 +33,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="font-sans bg-cotton text-ink antialiased selection:bg-ribbon/15 selection:text-ribbon min-h-screen">
+      <body className="font-sans bg-cotton text-ink antialiased selection:bg-blush/50 selection:text-ink min-h-screen">
         {children}
       </body>
     </html>

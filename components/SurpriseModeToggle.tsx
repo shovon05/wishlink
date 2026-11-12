@@ -43,20 +43,20 @@ export default function SurpriseModeToggle({ userId, initialSurpriseMode }: Prop
         type="button"
         title="Toggle surprise mode to hide which gifts are reserved"
         aria-label="Toggle surprise mode"
-        className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
+        className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
           surpriseMode
-            ? 'bg-spruce-light text-spruce border-spruce/30 shadow-2xs'
-            : 'bg-white text-slate-muted border-parchment hover:border-slate-muted/40 hover:text-ink shadow-2xs'
+            ? 'bg-caramel-light text-caramel border-caramel/40 shadow-2xs'
+            : 'bg-white text-slate-muted border-parchment hover:border-caramel/40 hover:text-ink shadow-2xs'
         }`}
       >
         {loading ? (
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
         ) : surpriseMode ? (
-          <EyeOff className="w-3.5 h-3.5 text-spruce" />
+          <EyeOff className="w-3.5 h-3.5 text-caramel" />
         ) : (
           <Eye className="w-3.5 h-3.5 text-slate-muted" />
         )}
-        <span>Surprise Mode: {surpriseMode ? 'On' : 'Off'}</span>
+        <span>Spoiler Mode: {surpriseMode ? 'Active' : 'Off'}</span>
       </button>
     </div>
   )

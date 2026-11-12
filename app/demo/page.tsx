@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ShieldCheck, Gift, CheckCircle2, ArrowRight, ExternalLink, X, Copy, Check } from 'lucide-react'
+import { ShieldCheck, Gift, CheckCircle2, ArrowRight, ExternalLink, X, Copy, Check, Sparkles } from 'lucide-react'
 
 interface DemoItem {
   id: string
@@ -80,7 +80,6 @@ export default function DemoProfilePage() {
     e.preventDefault()
     if (!activeModalItem) return
 
-    // Update demo item state
     setItems((prev) =>
       prev.map((i) => (i.id === activeModalItem.id ? { ...i, status: 'reserved' } : i))
     )
@@ -90,21 +89,21 @@ export default function DemoProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-cotton pb-20">
+    <main className="min-h-screen bg-cotton pb-20 selection:bg-blush/50 selection:text-ink">
       {/* Demo Banner */}
-      <div className="bg-ink text-white py-2.5 px-4 text-center text-xs">
+      <div className="bg-mocha text-cotton py-2.5 px-4 text-center text-xs border-b border-caramel/30">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="bg-ribbon text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-              Sample Registry
+            <span className="bg-blush/30 text-blush text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-blush/40">
+              Interactive Preview
             </span>
-            <span>This is an interactive preview. Try reserving an item to see how private gifting works!</span>
+            <span>Experience how private gifting locks items and protects personal delivery addresses.</span>
           </div>
           <Link
             href="/login"
             className="inline-flex items-center gap-1 text-xs font-semibold text-cotton hover:text-white underline underline-offset-2"
           >
-            <span>Create your own wishlist</span>
+            <span>Create your bespoke registry</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -112,7 +111,7 @@ export default function DemoProfilePage() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14">
         {/* Profile Registry Header */}
-        <header className="paper-tag rounded-3xl p-6 sm:p-8 mb-8 text-center sm:text-left flex flex-col sm:flex-row items-center sm:items-start gap-6 relative overflow-hidden">
+        <header className="paper-tag rounded-3xl p-6 sm:p-8 mb-8 text-center sm:text-left flex flex-col sm:flex-row items-center sm:items-start gap-6 relative overflow-hidden bg-white border border-parchment shadow-xs">
           <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-parchment-light border border-parchment shrink-0 shadow-xs">
             <Image
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400"
@@ -134,18 +133,18 @@ export default function DemoProfilePage() {
 
               <Link
                 href="/login"
-                className="bg-ink text-white px-4 py-2 rounded-xl text-xs font-semibold hover:bg-ink/90 active:scale-98 transition-all shadow-xs self-center sm:self-auto"
+                className="posh-button-primary px-4 py-2 rounded-xl text-xs font-semibold active:scale-98 cursor-pointer self-center sm:self-auto"
               >
                 Start Your Registry
               </Link>
             </div>
 
-            <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-slate-muted">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-parchment-light border border-parchment text-ink font-medium">
+            <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2.5 text-xs text-slate-muted">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-parchment-light border border-parchment text-ink font-semibold">
                 <Gift className="w-3.5 h-3.5 text-ribbon" />
-                {availableCount} {availableCount === 1 ? 'item available' : 'items available'}
+                {availableCount} {availableCount === 1 ? 'wish available' : 'wishes available'}
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-spruce-light/60 border border-spruce/20 text-spruce font-medium">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-spruce-light border border-spruce/30 text-spruce font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5 text-spruce" />
                 Zero-leak delivery address protection
               </span>
@@ -156,9 +155,15 @@ export default function DemoProfilePage() {
         {/* Registry Items Grid */}
         <section aria-labelledby="registry-heading">
           <div className="flex items-center justify-between mb-5 px-1">
-            <h2 id="registry-heading" className="text-lg font-serif font-bold text-ink">
-              Wishlist Catalog
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 id="registry-heading" className="text-lg font-serif font-bold text-ink">
+                Wishlist Catalog
+              </h2>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-caramel-light text-caramel border border-caramel/30">
+                <Sparkles className="w-3 h-3 text-caramel" />
+                <span>Demo Preview</span>
+              </span>
+            </div>
             <span className="text-xs text-slate-muted">
               {items.length} items total
             </span>
@@ -171,8 +176,8 @@ export default function DemoProfilePage() {
               return (
                 <div
                   key={item.id}
-                  className={`paper-tag rounded-3xl overflow-hidden flex flex-col justify-between transition-all group ${
-                    isReserved ? 'opacity-75 bg-parchment-light/40' : 'hover:-translate-y-1 hover:shadow-md'
+                  className={`paper-tag rounded-3xl overflow-hidden flex flex-col justify-between transition-all group bg-white border border-parchment ${
+                    isReserved ? 'opacity-80 bg-parchment-light/30' : 'hover:-translate-y-1 hover:border-caramel/40 hover:shadow-md'
                   }`}
                 >
                   <div className="relative aspect-4/3 w-full bg-parchment-light overflow-hidden border-b border-parchment">
@@ -185,14 +190,14 @@ export default function DemoProfilePage() {
                     />
 
                     {item.category && (
-                      <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-full text-[11px] font-medium text-ink shadow-2xs border border-parchment/80">
+                      <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-full text-[11px] font-semibold text-ink shadow-2xs border border-parchment">
                         {item.category}
                       </span>
                     )}
 
                     {isReserved && (
                       <div className="absolute inset-0 bg-ink/40 backdrop-blur-2xs flex items-center justify-center p-4">
-                        <div className="bg-white text-ink px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md">
+                        <div className="bg-white text-ink px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md border border-spruce/30">
                           <CheckCircle2 className="w-4 h-4 text-spruce" />
                           <span>Reserved for Maya</span>
                         </div>
@@ -213,7 +218,7 @@ export default function DemoProfilePage() {
                           href={item.productUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-muted hover:text-ink transition-colors"
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-caramel hover:text-mocha transition-colors"
                         >
                           <span>Store</span>
                           <ExternalLink className="w-3 h-3" />
@@ -223,14 +228,14 @@ export default function DemoProfilePage() {
 
                     <div className="pt-2 border-t border-parchment/60">
                       {isReserved ? (
-                        <div className="w-full text-center py-2.5 rounded-xl bg-parchment text-slate-muted text-xs font-medium cursor-not-allowed">
+                        <div className="w-full text-center py-2.5 rounded-xl bg-parchment text-slate-muted text-xs font-semibold cursor-not-allowed">
                           Gift Claimed
                         </div>
                       ) : (
                         <button
                           type="button"
                           onClick={() => handleOpenReserve(item)}
-                          className="w-full inline-flex items-center justify-center gap-2 bg-ink text-white hover:bg-ink/90 active:scale-98 py-2.5 px-4 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                          className="w-full posh-button-rose inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-semibold cursor-pointer"
                         >
                           <Gift className="w-3.5 h-3.5" />
                           <span>Reserve Gift for Maya</span>
@@ -247,11 +252,11 @@ export default function DemoProfilePage() {
 
       {/* Reservation Simulation Modal */}
       {activeModalItem && (
-        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-ink/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 border border-parchment shadow-xl relative animate-in fade-in zoom-in-95 duration-200">
             <button
               onClick={() => setActiveModalItem(null)}
-              className="absolute top-5 right-5 text-slate-muted hover:text-ink cursor-pointer"
+              className="absolute top-5 right-5 text-slate-muted hover:text-ink cursor-pointer p-1 rounded-lg hover:bg-parchment-light"
               aria-label="Close"
             >
               <X className="w-4 h-4" />
@@ -260,8 +265,8 @@ export default function DemoProfilePage() {
             {!reservedSuccess ? (
               <form onSubmit={handleConfirmReservation} className="space-y-4">
                 <div className="space-y-1">
-                  <span className="text-[11px] font-semibold text-spruce bg-spruce-light px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block">
-                    Interactive Reservation Demo
+                  <span className="text-[11px] font-semibold text-caramel bg-caramel-light border border-caramel/30 px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block">
+                    Interactive Reservation
                   </span>
                   <h3 className="text-xl font-serif font-bold text-ink">
                     Reserve &ldquo;{activeModalItem.title}&rdquo;
@@ -271,10 +276,10 @@ export default function DemoProfilePage() {
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-parchment-light border border-parchment space-y-2">
+                <div className="p-3.5 rounded-2xl bg-parchment-light/60 border border-parchment space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-ink">Item Price:</span>
-                    <span className="tabular-nums font-medium text-ink">{activeModalItem.price}</span>
+                    <span className="tabular-nums font-semibold text-ink">{activeModalItem.price}</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-muted">
                     <ShieldCheck className="w-4 h-4 text-spruce shrink-0" />
@@ -284,13 +289,13 @@ export default function DemoProfilePage() {
 
                 <div className="space-y-3 pt-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-ink">Anonymity</label>
+                    <label className="text-xs font-semibold text-ink">Gifter Identity</label>
                     <div className="flex items-center gap-2 text-xs">
                       <button
                         type="button"
                         onClick={() => setIsAnonymous(true)}
-                        className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-                          isAnonymous ? 'bg-ink text-white' : 'bg-parchment text-slate-muted'
+                        className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                          isAnonymous ? 'bg-mocha text-cotton' : 'bg-parchment text-slate-muted'
                         }`}
                       >
                         Anonymous
@@ -298,8 +303,8 @@ export default function DemoProfilePage() {
                       <button
                         type="button"
                         onClick={() => setIsAnonymous(false)}
-                        className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-                          !isAnonymous ? 'bg-ink text-white' : 'bg-parchment text-slate-muted'
+                        className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                          !isAnonymous ? 'bg-mocha text-cotton' : 'bg-parchment text-slate-muted'
                         }`}
                       >
                         Include Name
@@ -310,10 +315,10 @@ export default function DemoProfilePage() {
                   {!isAnonymous && (
                     <input
                       type="text"
-                      placeholder="Your name or a short note (e.g., Alex & Sam)"
+                      placeholder="Your name or note (e.g., Alex & Sam)"
                       value={contactNote}
                       onChange={(e) => setContactNote(e.target.value)}
-                      className="w-full px-3.5 py-2.5 border border-parchment rounded-xl text-xs bg-white text-ink focus:outline-none focus:border-ink"
+                      className="w-full px-3.5 py-2.5 border border-parchment rounded-xl text-xs bg-white text-ink focus:outline-none focus:border-caramel"
                     />
                   )}
                 </div>
@@ -321,7 +326,7 @@ export default function DemoProfilePage() {
                 <div className="pt-2 flex gap-2">
                   <button
                     type="submit"
-                    className="flex-1 bg-ribbon hover:bg-ribbon-hover text-white py-3 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
+                    className="posh-button-rose flex-1 py-3 rounded-xl text-xs font-semibold cursor-pointer"
                   >
                     Confirm Reservation
                   </button>
@@ -349,7 +354,7 @@ export default function DemoProfilePage() {
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-parchment-light border border-parchment text-left space-y-2">
+                <div className="p-3.5 rounded-2xl bg-parchment-light/60 border border-parchment text-left space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-ink">Simulated Tracker URL:</span>
                     <button
@@ -358,14 +363,14 @@ export default function DemoProfilePage() {
                         setCopiedLink(true)
                         setTimeout(() => setCopiedLink(false), 2000)
                       }}
-                      className="inline-flex items-center gap-1 text-[11px] text-ribbon hover:text-ribbon-hover cursor-pointer"
+                      className="inline-flex items-center gap-1 text-[11px] text-caramel hover:text-mocha cursor-pointer font-semibold"
                     >
                       {copiedLink ? <Check className="w-3 h-3 text-spruce" /> : <Copy className="w-3 h-3" />}
                       <span>{copiedLink ? 'Copied' : 'Copy'}</span>
                     </button>
                   </div>
                   <div className="font-mono text-[11px] text-slate-muted truncate bg-white px-2.5 py-1.5 rounded-lg border border-parchment">
-                    https://wishlink.app/reservations/demo#token={simulatedToken}
+                    https://wishlink.me/reservations/demo#token={simulatedToken}
                   </div>
                 </div>
 
@@ -373,13 +378,13 @@ export default function DemoProfilePage() {
                   <button
                     type="button"
                     onClick={() => setActiveModalItem(null)}
-                    className="w-full bg-ink text-white py-2.5 rounded-xl text-xs font-semibold cursor-pointer"
+                    className="posh-button-primary w-full py-2.5 rounded-xl text-xs font-semibold cursor-pointer"
                   >
                     Done Exploring
                   </button>
                   <Link
                     href="/login"
-                    className="w-full py-2.5 rounded-xl text-xs font-semibold text-ribbon hover:bg-parchment-light transition-colors text-center"
+                    className="w-full py-2.5 rounded-xl text-xs font-semibold text-caramel hover:text-mocha transition-colors text-center"
                   >
                     Ready to create your own registry →
                   </Link>

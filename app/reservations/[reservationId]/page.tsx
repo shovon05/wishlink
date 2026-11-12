@@ -130,30 +130,30 @@ export default function ReservationTrackerPage({ params }: Props) {
       <head>
         <meta name="referrer" content="no-referrer" />
       </head>
-      <main className="min-h-screen bg-cotton py-12 px-4 flex justify-center items-start">
+      <main className="min-h-screen bg-cotton py-12 px-4 flex justify-center items-start selection:bg-blush/50 selection:text-ink">
         <div className="max-w-lg w-full space-y-6">
 
           {/* Top Bar */}
           <div className="flex items-center justify-between px-1">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-muted hover:text-ink transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-muted hover:text-ink transition-colors px-2.5 py-1.5 rounded-xl hover:bg-parchment-light/60"
             >
               <Home className="w-3.5 h-3.5" />
               <span>Wishlink</span>
             </Link>
 
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-spruce bg-spruce-light px-2.5 py-0.5 rounded-full border border-spruce/20">
-              <ShieldCheck className="w-3 h-3 text-spruce" />
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-spruce bg-spruce-light px-3 py-1 rounded-full border border-spruce/30">
+              <ShieldCheck className="w-3.5 h-3.5 text-spruce" />
               Private Token Access
             </span>
           </div>
 
           {/* Delivery Card */}
-          <div className="paper-tag rounded-3xl p-6 sm:p-8 space-y-6 bg-white shadow-xs">
+          <div className="paper-tag rounded-3xl p-6 sm:p-8 space-y-6 bg-white border border-parchment shadow-xs">
 
             <div>
-              <span className="text-[11px] font-medium text-slate-muted uppercase tracking-wider block mb-1">
+              <span className="text-[11px] font-mono text-caramel uppercase tracking-wider block mb-1">
                 Reservation #{reservationId.slice(0, 8)}
               </span>
               <h1 className="text-2xl font-serif font-bold text-ink tracking-tight">
@@ -163,13 +163,13 @@ export default function ReservationTrackerPage({ params }: Props) {
 
             {loading ? (
               <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-muted">
-                <RefreshCw className="w-6 h-6 animate-spin stroke-1" />
+                <RefreshCw className="w-6 h-6 animate-spin text-caramel stroke-1" />
                 <p className="text-xs">Checking address status...</p>
               </div>
             ) : error ? (
-              <div className="p-4 rounded-2xl bg-ribbon-light border border-ribbon/20 text-ribbon text-xs space-y-2">
+              <div className="p-4 rounded-2xl bg-ribbon-light border border-ribbon/30 text-ribbon text-xs space-y-2">
                 <div className="flex items-center gap-2 font-semibold">
-                  <AlertCircle className="w-4 h-4" />
+                  <AlertCircle className="w-4 h-4 text-ribbon" />
                   <span>Unable to load destination</span>
                 </div>
                 <p>{error}</p>
@@ -177,7 +177,7 @@ export default function ReservationTrackerPage({ params }: Props) {
             ) : address ? (
               <div className="space-y-5 animate-in fade-in duration-200">
                 {/* Address Unlocked Banner */}
-                <div className="p-4 rounded-2xl bg-spruce-light border border-spruce/20 text-spruce space-y-1">
+                <div className="p-4 rounded-2xl bg-spruce-light border border-spruce/30 text-spruce space-y-1">
                   <div className="flex items-center gap-2 font-semibold text-sm">
                     <Check className="w-4 h-4 stroke-[2.5]" />
                     <span>Shipping Address Approved</span>
@@ -188,11 +188,11 @@ export default function ReservationTrackerPage({ params }: Props) {
                 </div>
 
                 {/* Address Display Box */}
-                <div className="p-5 rounded-2xl bg-cotton/80 border border-parchment space-y-3">
+                <div className="p-5 rounded-2xl bg-parchment-light/40 border border-parchment space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-ink" />
-                      <span className="text-xs font-semibold text-ink">
+                      <MapPin className="w-4 h-4 text-caramel" />
+                      <span className="text-xs font-serif font-bold text-ink">
                         {address.label || 'Destination Address'}
                       </span>
                     </div>
@@ -200,31 +200,31 @@ export default function ReservationTrackerPage({ params }: Props) {
                     <button
                       onClick={handleCopyAddress}
                       type="button"
-                      className="inline-flex items-center gap-1 text-xs font-medium text-ribbon hover:text-ribbon-hover cursor-pointer"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-caramel hover:text-mocha cursor-pointer"
                     >
                       {copiedAddress ? <Check className="w-3.5 h-3.5 text-spruce" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedAddress ? 'Copied' : 'Copy address'}</span>
                     </button>
                   </div>
 
-                  <p className="text-sm text-ink whitespace-pre-wrap font-sans leading-relaxed pt-1">
+                  <p className="text-sm text-ink whitespace-pre-wrap font-sans leading-relaxed pt-1 font-medium">
                     {address.full_address}
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-parchment-light text-slate-muted text-xs flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-slate-muted shrink-0" />
+                <div className="p-3.5 rounded-2xl bg-parchment-light/60 border border-parchment text-slate-muted text-xs flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-caramel shrink-0" />
                   <span>Bookmark this URL. The recipient&apos;s address is only visible through your secure token.</span>
                 </div>
               </div>
             ) : (
               <div className="text-center py-6 space-y-4">
-                <div className="w-14 h-14 bg-parchment-light rounded-2xl flex items-center justify-center mx-auto text-slate-muted border border-parchment">
+                <div className="w-14 h-14 bg-parchment-light rounded-2xl flex items-center justify-center mx-auto text-caramel border border-parchment">
                   <Clock className="w-7 h-7 stroke-1" />
                 </div>
 
                 <div className="space-y-1.5 max-w-sm mx-auto">
-                  <h3 className="text-base font-semibold text-ink">
+                  <h3 className="text-base font-serif font-bold text-ink">
                     Awaiting Recipient Address
                   </h3>
                   <p className="text-xs text-slate-muted leading-relaxed">
@@ -236,7 +236,7 @@ export default function ReservationTrackerPage({ params }: Props) {
                   <button
                     onClick={() => token && fetchAddress(token)}
                     type="button"
-                    className="inline-flex items-center gap-2 bg-ink text-white px-5 py-2.5 rounded-xl text-xs font-semibold hover:bg-ink/90 active:scale-98 transition-all cursor-pointer"
+                    className="posh-button-primary inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold cursor-pointer"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Check Again</span>

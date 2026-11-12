@@ -60,7 +60,6 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
         throw new Error('Failed to retrieve reservation details.')
       }
 
-      // Persist in local storage for easy recovery on this browser
       try {
         const existingStr = localStorage.getItem('gift_reservations')
         const existingArr = existingStr ? JSON.parse(existingStr) : []
@@ -104,7 +103,7 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
 
     return (
       <div className="text-center py-4 space-y-6">
-        <div className="w-14 h-14 bg-spruce-light text-spruce rounded-2xl flex items-center justify-center mx-auto border border-spruce/20">
+        <div className="w-14 h-14 bg-spruce-light text-spruce rounded-2xl flex items-center justify-center mx-auto border border-spruce/30">
           <CheckCircle2 className="w-7 h-7" />
         </div>
 
@@ -118,13 +117,13 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
         </div>
 
         {/* Action card */}
-        <div className="p-4 rounded-2xl bg-parchment-light border border-parchment text-left space-y-3">
+        <div className="p-4 rounded-2xl bg-parchment-light/40 border border-parchment text-left space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-ink">Your Private Tracking Link</span>
+            <span className="text-xs font-serif font-bold text-ink">Your Private Tracking Link</span>
             <button
               onClick={handleCopySecretLink}
               type="button"
-              className="inline-flex items-center gap-1 text-xs text-ribbon hover:text-ribbon-hover font-medium cursor-pointer"
+              className="inline-flex items-center gap-1 text-xs text-caramel hover:text-mocha font-semibold cursor-pointer"
             >
               {copiedLink ? <Check className="w-3.5 h-3.5 text-spruce" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copiedLink ? 'Copied' : 'Copy link'}</span>
@@ -138,7 +137,7 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <Link
             href={reservationUrl}
-            className="flex-1 inline-flex items-center justify-center gap-2 bg-ink text-white py-3 px-5 rounded-xl text-sm font-semibold hover:bg-ink/90 transition-all cursor-pointer"
+            className="flex-1 posh-button-primary inline-flex items-center justify-center gap-2 py-3.5 px-5 rounded-xl text-sm font-semibold cursor-pointer"
           >
             <span>Open Delivery Tracker</span>
             <ArrowRight className="w-4 h-4" />
@@ -146,7 +145,7 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
 
           <Link
             href={`/${username}`}
-            className="inline-flex items-center justify-center py-3 px-5 rounded-xl text-sm font-medium text-slate-muted hover:text-ink hover:bg-parchment-light transition-all"
+            className="inline-flex items-center justify-center py-3.5 px-5 rounded-xl text-sm font-semibold text-slate-muted hover:text-ink hover:bg-parchment-light/60 transition-all border border-parchment"
           >
             Return to registry
           </Link>
@@ -172,20 +171,20 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
           onClick={() => setIsAnonymous(true)}
           className={`flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer ${
             isAnonymous
-              ? 'border-ink bg-white shadow-xs'
-              : 'border-parchment bg-parchment-light/40 hover:bg-parchment-light text-slate-muted'
+              ? 'border-caramel bg-caramel-light/30 shadow-2xs'
+              : 'border-parchment bg-white hover:bg-parchment-light/40 text-slate-muted'
           }`}
         >
           <div className="pt-0.5">
             <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-              isAnonymous ? 'border-ink bg-ink' : 'border-slate-muted/50 bg-white'
+              isAnonymous ? 'border-mocha bg-mocha' : 'border-slate-muted/50 bg-white'
             }`}>
               {isAnonymous && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
             </div>
           </div>
           <div className="space-y-1">
             <span className="block text-sm font-semibold text-ink flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5 text-slate-muted" />
+              <Shield className="w-3.5 h-3.5 text-caramel" />
               Gift anonymously (Default)
             </span>
             <span className="block text-xs text-slate-muted leading-relaxed">
@@ -199,13 +198,13 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
           onClick={() => setIsAnonymous(false)}
           className={`flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer ${
             !isAnonymous
-              ? 'border-ink bg-white shadow-xs'
-              : 'border-parchment bg-parchment-light/40 hover:bg-parchment-light text-slate-muted'
+              ? 'border-caramel bg-caramel-light/30 shadow-2xs'
+              : 'border-parchment bg-white hover:bg-parchment-light/40 text-slate-muted'
           }`}
         >
           <div className="pt-0.5">
             <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-              !isAnonymous ? 'border-ink bg-ink' : 'border-slate-muted/50 bg-white'
+              !isAnonymous ? 'border-mocha bg-mocha' : 'border-slate-muted/50 bg-white'
             }`}>
               {!isAnonymous && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
             </div>
@@ -230,7 +229,7 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
                   value={contactInfo}
                   onChange={(e) => setContactInfo(e.target.value)}
                   placeholder="Your name or friendly note (e.g. Alex & Sam)"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-parchment text-sm bg-white text-ink placeholder:text-slate-muted/60 focus:outline-none focus:border-ink transition-colors"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-parchment text-sm bg-white text-ink placeholder:text-slate-muted/60 focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel transition-colors"
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
@@ -240,7 +239,7 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
       </div>
 
       {error && (
-        <div className="p-3.5 rounded-xl bg-ribbon-light border border-ribbon/20 text-ribbon text-xs space-y-1">
+        <div className="p-3.5 rounded-2xl bg-ribbon-light border border-ribbon/30 text-ribbon text-xs space-y-1">
           <p>{error}</p>
           {error.includes('moments ago') && (
             <Link href={`/${username}`} className="font-semibold underline inline-block">
@@ -253,7 +252,7 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-ribbon text-white hover:bg-ribbon-hover active:scale-98 disabled:opacity-50 py-3.5 px-4 rounded-xl text-sm font-semibold transition-all duration-150 shadow-xs cursor-pointer"
+        className="posh-button-rose w-full py-3.5 px-4 rounded-xl text-sm font-semibold transition-all duration-150 cursor-pointer disabled:opacity-50"
       >
         {loading ? 'Reserving gift...' : 'Confirm gift reservation'}
       </button>

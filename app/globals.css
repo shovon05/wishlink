@@ -1,19 +1,34 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #18191b;
-  --color-ink-muted: #4a4d53;
-  --color-cotton: #faf8f5;
-  --color-parchment: #ebe5dc;
-  --color-parchment-light: #f5f1eb;
-  --color-ribbon: #bd2846;
-  --color-ribbon-hover: #a5203b;
-  --color-ribbon-light: #fdf2f4;
-  --color-spruce: #2d5a46;
-  --color-spruce-light: #edf5f0;
-  --color-slate-muted: #6e7179;
+  /* Posh Luxury Palette */
+  --color-cotton: #FAF2E9;
+  --color-parchment: #EAD9C4;
+  --color-parchment-light: #F4E8D8;
 
-  --font-serif: "Iowan Old Style", "Apple Garamond", "Baskerville", "Times New Roman", "Droid Serif", Times, Source Serif Pro, serif;
+  --color-ink: #2C1B10;
+  --color-ink-muted: #5E4331;
+  --color-slate-muted: #7A5F4B;
+
+  --color-ribbon: #D96F79;
+  --color-ribbon-hover: #C55762;
+  --color-ribbon-light: #FDF3F4;
+
+  --color-caramel: #C48B54;
+  --color-caramel-hover: #B07843;
+  --color-caramel-light: #F8F1E7;
+
+  --color-mocha: #8A5E3B;
+  --color-mocha-hover: #754E2E;
+  --color-mocha-light: #F4EDE6;
+
+  --color-blush: #F4C2C3;
+  --color-blush-light: #FAF0F1;
+
+  --color-spruce: #2D5A46;
+  --color-spruce-light: #EDF5F0;
+
+  --font-serif: "Newsreader", "Playfair Display", "Iowan Old Style", "Apple Garamond", "Baskerville", "Times New Roman", serif;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -21,13 +36,18 @@
   * {
     border-color: var(--color-parchment);
   }
+
+  body {
+    background-color: var(--color-cotton);
+    color: var(--color-ink);
+  }
 }
 
-/* Tactile Parcel & Paper Utilities */
+/* Tactile Luxury Stationery & Paper Utilities */
 .paper-tag {
   background-color: #ffffff;
   border: 1px solid var(--color-parchment);
-  box-shadow: 0 1px 2px rgba(24, 25, 27, 0.04), 0 4px 12px rgba(24, 25, 27, 0.03);
+  box-shadow: 0 1px 3px rgba(44, 27, 16, 0.04), 0 8px 24px -4px rgba(138, 94, 59, 0.07);
 }
 
 .paper-perforation {
@@ -35,4 +55,34 @@
   background-size: 8px 8px;
 }
 
+.posh-gradient-border {
+  border: 1px solid transparent;
+  background: linear-gradient(to bottom right, #ffffff, #faf2e9) padding-box,
+              linear-gradient(to bottom right, #C48B54, #F4C2C3) border-box;
+}
 
+.posh-button-primary {
+  background: linear-gradient(135deg, #8A5E3B 0%, #6E4426 100%);
+  color: #FAF2E9;
+  box-shadow: 0 2px 6px rgba(110, 68, 38, 0.25), 0 10px 20px -5px rgba(138, 94, 59, 0.2);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.posh-button-primary:hover {
+  background: linear-gradient(135deg, #7A5132 0%, #5F391E 100%);
+  box-shadow: 0 4px 12px rgba(110, 68, 38, 0.35);
+  transform: translateY(-1px);
+}
+
+.posh-button-rose {
+  background: linear-gradient(135deg, #D96F79 0%, #C45762 100%);
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(217, 111, 121, 0.25), 0 10px 20px -5px rgba(217, 111, 121, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.posh-button-rose:hover {
+  background: linear-gradient(135deg, #C95E69 0%, #B44752 100%);
+  box-shadow: 0 4px 14px rgba(217, 111, 121, 0.4);
+  transform: translateY(-1px);
+}

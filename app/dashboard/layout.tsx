@@ -24,14 +24,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const username = profile.username
 
   return (
-    <div className="min-h-screen bg-cotton flex flex-col">
+    <div className="min-h-screen bg-cotton flex flex-col selection:bg-blush/50 selection:text-ink">
       {/* Top Studio Header */}
-      <header className="border-b border-parchment bg-white/90 backdrop-blur-md sticky top-0 z-30">
+      <header className="border-b border-parchment bg-white/95 backdrop-blur-md sticky top-0 z-30 shadow-2xs">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 rounded-xl bg-ink text-white flex items-center justify-center shadow-xs">
-                <Gift className="w-4 h-4 text-cotton stroke-[2.2]" />
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Link href="/dashboard" className="flex items-center gap-2.5 group">
+              <div className="w-8 h-8 rounded-xl bg-mocha text-cotton flex items-center justify-center shadow-xs border border-caramel/20 group-hover:scale-105 transition-transform">
+                <Gift className="w-4 h-4 text-blush stroke-[2.2]" />
               </div>
               <span className="font-serif font-bold text-lg text-ink tracking-tight">
                 Wishlink
@@ -43,10 +43,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
               href={`/${username}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-slate-muted hover:text-ink bg-parchment-light hover:bg-parchment transition-all border border-parchment"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-slate-muted hover:text-ink bg-parchment-light hover:bg-parchment transition-all border border-parchment shadow-2xs"
             >
               <span>wishlink.me/{username}</span>
-              <ExternalLink className="w-3 h-3 text-slate-muted" />
+              <ExternalLink className="w-3 h-3 text-caramel" />
             </Link>
           </div>
 
@@ -59,7 +59,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <form action="/auth/signout" method="post" className="hidden sm:block">
               <button
                 type="submit"
-                className="text-xs font-semibold text-slate-muted hover:text-ink transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="text-xs font-semibold text-slate-muted hover:text-ribbon transition-colors flex items-center gap-1.5 cursor-pointer px-2.5 py-1.5 rounded-xl hover:bg-parchment-light/60"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Sign Out</span>
@@ -69,37 +69,37 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
 
         {/* Desktop Secondary Tab Bar */}
-        <div className="border-t border-parchment/60 bg-cotton/50">
+        <div className="border-t border-parchment/60 bg-cotton/60 backdrop-blur-xs">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 flex items-center gap-1 sm:gap-2 overflow-x-auto py-2">
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-ink hover:bg-parchment-light transition-colors shrink-0"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-ink hover:bg-white hover:shadow-2xs transition-all shrink-0"
             >
-              <ListOrdered className="w-3.5 h-3.5" />
-              <span>Wishlist</span>
+              <ListOrdered className="w-3.5 h-3.5 text-caramel" />
+              <span>Wishlist Studio</span>
             </Link>
 
             <Link
               href="/dashboard/addresses"
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-muted hover:text-ink hover:bg-parchment-light transition-colors shrink-0"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-muted hover:text-ink hover:bg-white transition-all shrink-0"
             >
-              <MapPin className="w-3.5 h-3.5" />
+              <MapPin className="w-3.5 h-3.5 text-slate-muted" />
               <span>Shipping Addresses</span>
             </Link>
 
             <Link
               href="/dashboard/notifications"
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-muted hover:text-ink hover:bg-parchment-light transition-colors shrink-0"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-muted hover:text-ink hover:bg-white transition-all shrink-0"
             >
-              <Bell className="w-3.5 h-3.5" />
+              <Bell className="w-3.5 h-3.5 text-slate-muted" />
               <span>Gifting Requests</span>
             </Link>
 
             <Link
               href="/dashboard/security"
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-muted hover:text-ink hover:bg-parchment-light transition-colors shrink-0"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-muted hover:text-ink hover:bg-white transition-all shrink-0"
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
+              <ShieldCheck className="w-3.5 h-3.5 text-slate-muted" />
               <span>Security & 2FA</span>
             </Link>
           </div>
@@ -112,20 +112,35 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </main>
 
       {/* Mobile Bottom Tab Bar */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-parchment px-4 py-2 flex items-center justify-around">
-        <Link href="/dashboard" className="flex flex-col items-center gap-1 text-[10px] font-semibold text-ink">
-          <ListOrdered className="w-4 h-4" />
+      <nav 
+        aria-label="Mobile Navigation"
+        className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-parchment px-4 py-2 flex items-center justify-around shadow-lg"
+      >
+        <Link 
+          href="/dashboard" 
+          className="flex flex-col items-center gap-1 text-[10px] font-semibold text-ink p-1"
+        >
+          <ListOrdered className="w-4 h-4 text-caramel" />
           <span>Wishlist</span>
         </Link>
-        <Link href="/dashboard/addresses" className="flex flex-col items-center gap-1 text-[10px] font-medium text-slate-muted hover:text-ink">
+        <Link 
+          href="/dashboard/addresses" 
+          className="flex flex-col items-center gap-1 text-[10px] font-medium text-slate-muted hover:text-ink p-1"
+        >
           <MapPin className="w-4 h-4" />
           <span>Addresses</span>
         </Link>
-        <Link href="/dashboard/notifications" className="flex flex-col items-center gap-1 text-[10px] font-medium text-slate-muted hover:text-ink">
+        <Link 
+          href="/dashboard/notifications" 
+          className="flex flex-col items-center gap-1 text-[10px] font-medium text-slate-muted hover:text-ink p-1"
+        >
           <Bell className="w-4 h-4" />
           <span>Requests</span>
         </Link>
-        <Link href="/dashboard/security" className="flex flex-col items-center gap-1 text-[10px] font-medium text-slate-muted hover:text-ink">
+        <Link 
+          href="/dashboard/security" 
+          className="flex flex-col items-center gap-1 text-[10px] font-medium text-slate-muted hover:text-ink p-1"
+        >
           <ShieldCheck className="w-4 h-4" />
           <span>Security</span>
         </Link>

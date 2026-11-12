@@ -131,17 +131,17 @@ export default function TotpSetup() {
 
   if (loading) {
     return (
-      <div className="paper-tag rounded-3xl p-6 text-xs text-slate-muted">
+      <div className="paper-tag rounded-3xl p-6 text-xs text-slate-muted bg-white border border-parchment">
         Checking Two-Factor Authentication status...
       </div>
     )
   }
 
   return (
-    <div className="paper-tag rounded-3xl p-6 sm:p-7 space-y-5">
+    <div className="paper-tag rounded-3xl p-6 sm:p-7 space-y-5 bg-white border border-parchment">
       <div>
         <h2 className="text-base font-serif font-bold text-ink flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-spruce stroke-[2.2]" />
+          <ShieldCheck className="w-5 h-5 text-caramel stroke-[2.2]" />
           <span>Authenticator App (TOTP 2FA)</span>
         </h2>
         <p className="text-xs text-slate-muted mt-0.5 leading-relaxed">
@@ -150,21 +150,21 @@ export default function TotpSetup() {
       </div>
 
       {successMsg && (
-        <div className="p-3.5 rounded-xl bg-spruce-light border border-spruce/30 text-spruce text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-2xl bg-spruce-light border border-spruce/30 text-spruce text-xs flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {error && (
-        <div className="p-3.5 rounded-xl bg-ribbon-light border border-ribbon/20 text-ribbon text-xs flex items-start gap-2">
+        <div className="p-3.5 rounded-2xl bg-ribbon-light border border-ribbon/30 text-ribbon text-xs flex items-start gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
       )}
 
       {isEnrolled ? (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-spruce-light/60 border border-spruce/20 rounded-2xl gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-spruce-light border border-spruce/30 rounded-2xl gap-3">
           <span className="font-semibold text-xs text-spruce flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-spruce" />
             <span>2FA Protection Active</span>
@@ -179,8 +179,8 @@ export default function TotpSetup() {
           </button>
         </div>
       ) : qrCode ? (
-        <div className="flex flex-col items-center max-w-sm mx-auto p-6 bg-parchment-light/60 border border-parchment rounded-2xl space-y-4">
-          <h3 className="text-sm font-semibold text-ink text-center">
+        <div className="flex flex-col items-center max-w-sm mx-auto p-6 bg-parchment-light/40 border border-parchment rounded-2xl space-y-4">
+          <h3 className="text-sm font-serif font-bold text-ink text-center">
             Scan with Authenticator
           </h3>
 
@@ -216,14 +216,14 @@ export default function TotpSetup() {
                 value={verifyCode}
                 onChange={(e) => setVerifyCode(e.target.value.replace(/[^0-9]/g, ''))}
                 placeholder="000000"
-                className="w-full text-center text-2xl font-mono tracking-[0.3em] py-2.5 border border-parchment rounded-xl bg-white text-ink focus:outline-none focus:border-ink shadow-2xs"
+                className="w-full text-center text-2xl font-mono tracking-[0.3em] py-2.5 border border-parchment rounded-xl bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel shadow-2xs"
               />
             </div>
             <button
               onClick={handleVerify}
               disabled={actionLoading || verifyCode.length !== 6}
               type="button"
-              className="w-full bg-ink text-white hover:bg-ink/90 active:scale-98 disabled:opacity-40 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
+              className="posh-button-primary w-full py-2.5 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer disabled:opacity-40"
             >
               {actionLoading ? 'Verifying...' : 'Verify & Activate 2FA'}
             </button>
@@ -235,7 +235,7 @@ export default function TotpSetup() {
             onClick={handleEnable}
             disabled={actionLoading}
             type="button"
-            className="inline-flex items-center gap-2 bg-ink text-white hover:bg-ink/90 active:scale-98 disabled:opacity-50 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
+            className="posh-button-primary inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 cursor-pointer shadow-xs"
           >
             {actionLoading ? (
               <>
@@ -244,7 +244,7 @@ export default function TotpSetup() {
               </>
             ) : (
               <>
-                <KeyRound className="w-3.5 h-3.5 stroke-[2.2]" />
+                <KeyRound className="w-3.5 h-3.5 stroke-[2.2] text-blush" />
                 <span>Enable Authenticator 2FA</span>
               </>
             )}

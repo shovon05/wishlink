@@ -10,7 +10,7 @@ import {
   ShoppingBag,
   HelpCircle,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
 } from 'lucide-react'
 
 export default async function Home() {
@@ -32,45 +32,45 @@ export default async function Home() {
     { name: 'Etsy', category: 'Handmade & Vintage' },
     { name: 'Target', category: 'Home & Living' },
     { name: 'Apple', category: 'Tech & Gadgets' },
-    { name: 'Shopify Stores', category: 'Direct from Makers' },
+    { name: 'Shopify Boutiques', category: 'Independent Makers' },
     { name: 'Sephora', category: 'Beauty & Skincare' },
     { name: 'Williams Sonoma', category: 'Kitchen & Dining' },
-    { name: 'Local Boutiques', category: 'Any Web URL' },
+    { name: 'Ateliers & Galleries', category: 'Any Web URL' },
   ]
 
   const howItWorks = [
     {
       step: '01',
-      title: 'Paste product links from any store',
-      description: 'Add gifts from Amazon, independent makers, or local shops. We automatically extract photos, titles, and prices.',
+      title: 'Curate product links from any store',
+      description: 'Add gifts from global retailers, bespoke makers, or local ateliers. Our engine automatically pulls photos, titles, and live prices.',
     },
     {
       step: '02',
-      title: 'Share your one private link',
-      description: 'Add your Wishlink to your bio or send it to friends and family. Your residential address is never shown publicly.',
+      title: 'Share your single private link',
+      description: 'Place your Wishlink in your bio or send it to friends. Your residential home address is never revealed to the public.',
     },
     {
       step: '03',
-      title: 'Friends reserve to stop duplicates',
-      description: 'When someone picks an item, it locks in real-time. Double-gifting is impossible, and they get your address securely.',
+      title: 'Friends reserve to prevent duplicates',
+      description: 'When an item is reserved, it locks in real-time. Double-gifting is impossible, and gifters receive your shipping details securely.',
     },
   ]
 
   const faqs = [
     {
-      question: 'How do gifters send items without seeing my address?',
+      question: 'How do gifters send items without seeing my personal address?',
       answer:
         'Your home address is never public. When a friend reserves a gift, we send you a private notification. You approve sharing your address (or allow auto-share with default address), and it is revealed only to that verified gifter via a cryptographically hashed token ticket.',
     },
     {
-      question: 'Can I add products from any store or country?',
+      question: 'Can I add products from any atelier or country?',
       answer:
-        'Yes! Wishlink is universal. You can paste a link from Amazon, boutique ateliers, Kickstarter, or custom shop URLs. If an online shop blocks automated crawlers, our instant manual entry lets you customize title, photo, and price in seconds.',
+        'Yes. Wishlink is completely universal. You can paste a link from Amazon, boutique ateliers, Kickstarter, or custom shop URLs. If an online shop blocks automated crawlers, our instant manual entry lets you customize title, photo, and price in seconds.',
     },
     {
-      question: 'Can I keep reserved gifts a surprise for my birthday or event?',
+      question: 'Can I keep reserved gifts a surprise for my celebration?',
       answer:
-        'Yes. You can turn on Spoiler-Free Mode in your dashboard. When active, you’ll receive delivery notifications to approve shipping without revealing which specific item was picked, keeping the gift a true surprise until you open it!',
+        'Yes. You can turn on Spoiler-Free Mode in your dashboard. When active, you will receive delivery notifications to approve shipping without revealing which specific item was picked, keeping the gift a true surprise until you open it!',
     },
     {
       question: 'What if someone reserves an item but doesn’t buy it?',
@@ -80,13 +80,13 @@ export default async function Home() {
   ]
 
   return (
-    <main className="min-h-screen bg-cotton flex flex-col justify-between">
+    <main className="min-h-screen bg-cotton flex flex-col justify-between selection:bg-blush/50 selection:text-ink">
       {/* Top Navbar */}
-      <header className="border-b border-parchment/80 bg-cotton/80 backdrop-blur-md sticky top-0 z-30">
+      <header className="border-b border-parchment/80 bg-cotton/90 backdrop-blur-md sticky top-0 z-30 shadow-2xs">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-xl bg-ink text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
-              <Gift className="w-4 h-4 text-cotton stroke-[2.2]" />
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-xl bg-mocha text-cotton flex items-center justify-center shadow-xs border border-caramel/25 group-hover:scale-105 transition-transform">
+              <Gift className="w-4 h-4 text-blush stroke-[2.2]" />
             </div>
             <span className="font-serif font-bold text-lg text-ink tracking-tight">
               Wishlink
@@ -96,7 +96,7 @@ export default async function Home() {
           <nav className="flex items-center gap-3">
             <Link
               href="/demo"
-              className="text-xs font-semibold text-slate-muted hover:text-ink hidden sm:inline-flex items-center gap-1 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-parchment-light"
+              className="text-xs font-semibold text-slate-muted hover:text-ink hidden sm:inline-flex items-center gap-1.5 transition-colors px-3 py-1.5 rounded-xl hover:bg-parchment-light/80"
             >
               <span>Explore Demo Registry</span>
             </Link>
@@ -106,14 +106,14 @@ export default async function Home() {
                 {userProfile?.username && !userProfile.username.startsWith('user_') && (
                   <Link
                     href={`/${userProfile.username}`}
-                    className="text-xs font-medium text-slate-muted hover:text-ink hidden md:inline-block"
+                    className="text-xs font-semibold text-slate-muted hover:text-ink hidden md:inline-block px-2.5 py-1.5"
                   >
                     View my link
                   </Link>
                 )}
                 <Link
                   href="/dashboard"
-                  className="bg-ink text-white px-4 py-2 rounded-xl text-xs font-semibold hover:bg-ink/90 transition-all cursor-pointer"
+                  className="posh-button-primary px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer"
                 >
                   My Dashboard
                 </Link>
@@ -128,7 +128,7 @@ export default async function Home() {
                 </Link>
                 <Link
                   href="/login"
-                  className="bg-ink text-white px-4 py-2 rounded-xl text-xs font-semibold hover:bg-ink/90 active:scale-98 transition-all shadow-xs cursor-pointer"
+                  className="posh-button-primary px-4 py-2 rounded-xl text-xs font-semibold active:scale-98 cursor-pointer"
                 >
                   Get Started
                 </Link>
@@ -139,10 +139,10 @@ export default async function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-16 text-center space-y-8">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-parchment-light border border-parchment text-xs font-medium text-ink shadow-2xs">
-          <Sparkles className="w-3.5 h-3.5 text-ribbon" />
-          <span>The privacy-first universal wishlist</span>
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-16 text-center space-y-8 relative">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-caramel-light border border-caramel/30 text-xs font-semibold text-caramel shadow-2xs">
+          <Sparkles className="w-3.5 h-3.5 text-caramel" />
+          <span>The privacy-first universal registry</span>
         </div>
 
         <div className="space-y-4 max-w-2xl mx-auto">
@@ -150,14 +150,14 @@ export default async function Home() {
             Everything you wish for. One private link.
           </h1>
           <p className="text-base sm:text-lg text-slate-muted leading-relaxed font-sans max-w-xl mx-auto">
-            Create your wishlist from any store. Share it with friends. Let them reserve gifts without ever exposing your home address.
+            Curate your registry from any atelier or store worldwide. Share your bespoke link. Friends reserve gifts seamlessly without ever exposing your home address.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <Link
             href={user ? '/dashboard' : '/login'}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-ribbon text-white hover:bg-ribbon-hover active:scale-98 px-7 py-3.5 rounded-2xl text-sm font-semibold transition-all shadow-xs cursor-pointer"
+            className="w-full sm:w-auto posh-button-rose inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
           >
             <span>{user ? 'Go to my dashboard' : 'Create your free wishlist'}</span>
             <ArrowRight className="w-4 h-4 stroke-[2.2]" />
@@ -165,14 +165,14 @@ export default async function Home() {
 
           <Link
             href="/demo"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border border-parchment text-ink hover:bg-parchment-light px-6 py-3.5 rounded-2xl text-sm font-semibold transition-all shadow-2xs cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border border-parchment hover:border-caramel/40 text-ink hover:bg-parchment-light/60 px-6 py-3.5 rounded-2xl text-sm font-semibold transition-all shadow-2xs cursor-pointer"
           >
             <span>See Maya&apos;s Demo Wishlist</span>
-            <ExternalLink className="w-4 h-4 text-slate-muted" />
+            <ExternalLink className="w-4 h-4 text-caramel" />
           </Link>
         </div>
 
-        <div className="text-xs text-slate-muted flex items-center justify-center gap-2 pt-1">
+        <div className="text-xs text-slate-muted flex flex-wrap items-center justify-center gap-2 pt-1 font-medium">
           <ShieldCheck className="w-4 h-4 text-spruce" />
           <span>Zero public addresses · Atomic duplicate prevention · Passkeys & Google sign in</span>
         </div>
@@ -184,10 +184,10 @@ export default async function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section className="border-t border-parchment bg-white/70 py-16 sm:py-24">
+      <section className="border-t border-parchment bg-white/80 py-16 sm:py-24">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-xl mx-auto mb-14 space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ribbon">
+            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-ribbon">
               Simple 3-Step Process
             </span>
             <h2 className="text-2xl sm:text-3xl font-serif font-bold text-ink">
@@ -202,9 +202,9 @@ export default async function Home() {
             {howItWorks.map((item) => (
               <div
                 key={item.step}
-                className="paper-tag rounded-3xl p-6 sm:p-7 space-y-4 hover:shadow-md transition-shadow relative"
+                className="paper-tag rounded-3xl p-6 sm:p-7 space-y-4 hover:border-caramel/30 hover:shadow-md transition-all relative bg-white border border-parchment"
               >
-                <div className="w-10 h-10 rounded-2xl bg-ink text-white font-mono font-bold text-sm flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-mocha text-cotton border border-caramel/30 font-mono font-bold text-sm flex items-center justify-center shadow-xs">
                   {item.step}
                 </div>
                 <h3 className="font-serif font-bold text-lg text-ink">
@@ -223,15 +223,15 @@ export default async function Home() {
       <section className="py-16 sm:py-20 border-t border-parchment">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-8">
           <div className="space-y-2 max-w-lg mx-auto">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-parchment-light border border-parchment text-xs font-semibold text-ink">
-              <ShoppingBag className="w-3.5 h-3.5 text-ribbon" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-caramel-light border border-caramel/30 text-xs font-semibold text-caramel">
+              <ShoppingBag className="w-3.5 h-3.5 text-caramel" />
               <span>Universal Compatibility</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-serif font-bold text-ink">
               Add gifts from anywhere on the web
             </h2>
             <p className="text-xs sm:text-sm text-slate-muted">
-              You aren&apos;t locked into a single retail ecosystem. Combine your favorites in one sleek list.
+              You are never locked into a single retail ecosystem. Combine your favorites in one sleek list.
             </p>
           </div>
 
@@ -239,7 +239,7 @@ export default async function Home() {
             {supportedStores.map((store) => (
               <div
                 key={store.name}
-                className="p-4 rounded-2xl bg-white border border-parchment text-left shadow-2xs hover:border-ink/20 transition-all"
+                className="p-4 rounded-2xl bg-white border border-parchment text-left shadow-2xs hover:border-caramel/40 transition-all"
               >
                 <p className="font-semibold text-sm text-ink">{store.name}</p>
                 <p className="text-[11px] text-slate-muted mt-0.5">{store.category}</p>
@@ -285,7 +285,7 @@ export default async function Home() {
               <div className="pt-2">
                 <Link
                   href="/privacy"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-ribbon hover:text-ribbon-hover"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-caramel hover:text-mocha transition-colors"
                 >
                   <span>Read our full Privacy Policy</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -293,7 +293,7 @@ export default async function Home() {
               </div>
             </div>
 
-            <div className="paper-tag rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm bg-white">
+            <div className="paper-tag rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm bg-white border border-parchment">
               <div className="flex items-center gap-3 border-b border-parchment pb-4">
                 <div className="w-10 h-10 rounded-xl bg-spruce-light text-spruce flex items-center justify-center">
                   <EyeOff className="w-5 h-5" />
@@ -323,8 +323,8 @@ export default async function Home() {
       <section className="py-16 sm:py-24 border-t border-parchment">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-10">
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-parchment-light border border-parchment text-xs font-semibold text-ink">
-              <HelpCircle className="w-3.5 h-3.5 text-ribbon" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-caramel-light border border-caramel/30 text-xs font-semibold text-caramel">
+              <HelpCircle className="w-3.5 h-3.5 text-caramel" />
               <span>Questions & Answers</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-serif font-bold text-ink">
@@ -336,7 +336,7 @@ export default async function Home() {
             {faqs.map((faq) => (
               <div
                 key={faq.question}
-                className="paper-tag rounded-2xl p-5 sm:p-6 space-y-2.5 bg-white"
+                className="paper-tag rounded-2xl p-5 sm:p-6 space-y-2.5 bg-white border border-parchment hover:border-caramel/30 transition-colors"
               >
                 <h3 className="font-serif font-bold text-base text-ink leading-snug">
                   {faq.question}
@@ -352,7 +352,7 @@ export default async function Home() {
 
       {/* Final Callout Banner */}
       <section className="py-16 px-4">
-        <div className="max-w-3xl mx-auto paper-tag rounded-3xl p-8 sm:p-12 text-center space-y-6 relative overflow-hidden bg-white shadow-sm">
+        <div className="max-w-3xl mx-auto paper-tag rounded-3xl p-8 sm:p-12 text-center space-y-6 relative overflow-hidden bg-white border border-parchment shadow-sm">
           <div className="space-y-2 relative z-10">
             <h2 className="text-3xl sm:text-4xl font-serif font-bold text-ink">
               Ready to start your private wishlist?
@@ -365,7 +365,7 @@ export default async function Home() {
           <div className="pt-2 relative z-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href={user ? '/dashboard' : '/login'}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-ink text-white hover:bg-ink/90 active:scale-98 px-6 py-3.5 rounded-2xl text-sm font-semibold transition-all shadow-xs cursor-pointer"
+              className="w-full sm:w-auto posh-button-primary inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-semibold cursor-pointer shadow-xs"
             >
               <span>{user ? 'Open Dashboard' : 'Claim your Wishlink now'}</span>
               <ArrowRight className="w-4 h-4" />
@@ -373,7 +373,7 @@ export default async function Home() {
 
             <Link
               href="/demo"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-parchment-light border border-parchment text-ink hover:bg-parchment px-5 py-3.5 rounded-2xl text-sm font-semibold transition-all cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border border-parchment hover:border-caramel/40 text-ink hover:bg-parchment-light/60 px-5 py-3.5 rounded-2xl text-sm font-semibold transition-all cursor-pointer"
             >
               <span>View Interactive Demo</span>
             </Link>
@@ -386,15 +386,15 @@ export default async function Home() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             <Gift className="w-4 h-4 text-ribbon" />
-            <span className="font-semibold text-ink">Wishlink</span>
-            <span>— The privacy-first universal wishlist</span>
+            <span className="font-serif font-bold text-ink">Wishlink</span>
+            <span>— The privacy-first universal registry</span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
             <Link href="/demo" className="hover:text-ink transition-colors">Sample Registry</Link>
             <Link href="/privacy" className="hover:text-ink transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-ink transition-colors">Terms of Service</Link>
-            <a href="mailto:support@wishlink.app" className="hover:text-ink transition-colors">Contact Support</a>
+            <a href="mailto:support@wishlink.me" className="hover:text-ink transition-colors">Contact Support</a>
             <Link href="/login" className="hover:text-ink transition-colors">Sign In</Link>
           </div>
         </div>

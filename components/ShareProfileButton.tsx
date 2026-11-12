@@ -26,7 +26,6 @@ export default function ShareProfileButton({ username, petName }: ShareProfileBu
         })
         return
       } catch (err) {
-        // User cancelled or share failed; fall through to clipboard copy
         if ((err as Error).name === 'AbortError') return
       }
     }
@@ -45,21 +44,21 @@ export default function ShareProfileButton({ username, petName }: ShareProfileBu
       onClick={handleShare}
       type="button"
       aria-label="Share this registry"
-      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium transition-all duration-150 cursor-pointer ${
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer shadow-2xs ${
         copied
-          ? 'bg-spruce-light text-spruce border border-spruce/30 shadow-xs'
-          : 'bg-white text-ink border border-parchment hover:border-slate-muted/40 hover:bg-parchment-light shadow-xs active:scale-98'
+          ? 'bg-spruce-light text-spruce border border-spruce/30'
+          : 'bg-white text-ink border border-parchment hover:border-caramel/40 hover:bg-parchment-light/60 active:scale-98'
       }`}
     >
       {copied ? (
         <>
           <Check className="w-3.5 h-3.5 text-spruce stroke-[2.5]" />
-          <span>Link copied to clipboard</span>
+          <span>Link copied!</span>
         </>
       ) : (
         <>
-          <Share2 className="w-3.5 h-3.5 text-slate-muted" />
-          <span>Share registry</span>
+          <Share2 className="w-3.5 h-3.5 text-caramel stroke-[2]" />
+          <span>Share Registry</span>
         </>
       )}
     </button>
