@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Copy, CheckCircle2 } from 'lucide-react' // Lucide আইকন ইনস্টল করা না থাকলে শুধু টেক্সট ব্যবহার করতে পারেন
+import { Copy, CheckCircle2, ShieldCheck, Check, KeyRound, Loader2, AlertCircle } from 'lucide-react'
 
 export default function TotpSetup() {
   const supabase = createClient()
@@ -22,46 +22,55 @@ export default function TotpSetup() {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    checkFactors()
-  }, [])
-
-  const checkFactors = async () => {
-    setLoading(true)
-    const { data, error } = await supabase.auth.mfa.listFactors()
-    if (data && data.totp.length > 0) {
-      const verifiedFactor = data.totp.find(f => f.status === 'verified')
-      if (verifiedFactor) {
-        setIsEnrolled(true)
-        setFactorId(verifiedFactor.id)
+    let ignore = false
+    const init = async () => {
+      try {
+        const { data } = await supabase.auth.mfa.listFactors()
+        if (!ignore && data && data.totp.length > 0) {
+          const verifiedFactor = data.totp.find(f => f.status === 'verified')
+          if (verifiedFactor) {
+            setIsEnrolled(true)
+            setFactorId(verifiedFactor.id)
+          }
+        }
+      } finally {
+        if (!ignore) setLoading(false)
       }
     }
-    setLoading(false)
-  }
+    init()
+    return () => {
+      ignore = true
+    }
+  }, [supabase])
 
   const handleEnable = async () => {
     setActionLoading(true)
     setError('')
-    // আগের অসম্পূর্ণ (unverified) factor থাকলে মুছে ফেলা, নাহলে enroll এরর দেয়
-    const { data: existing } = await supabase.auth.mfa.listFactors()
-    for (const f of existing?.all ?? []) {
-      if (f.factor_type === 'totp' && f.status === 'unverified') {
-        await supabase.auth.mfa.unenroll({ factorId: f.id })
+    try {
+      const { data: existing } = await supabase.auth.mfa.listFactors()
+      for (const f of existing?.all ?? []) {
+        if (f.factor_type === 'totp' && f.status === 'unverified') {
+          await supabase.auth.mfa.unenroll({ factorId: f.id })
+        }
       }
+      const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: 'totp' })
+      if (enrollError) throw enrollError
+
+      if (data) {
+        setFactorId(data.id)
+        setQrCode(data.totp.qr_code)
+        setSecret(data.totp.secret)
+      }
+    } catch {
+      setError('Failed to initialize 2FA enrollment. Please try again.')
+    } finally {
+      setActionLoading(false)
     }
-    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' })
-    if (error) {
-      setError('Failed to initialize 2FA. Try again.')
-    } else if (data) {
-      setFactorId(data.id)
-      setQrCode(data.totp.qr_code)
-      setSecret(data.totp.secret)
-    }
-    setActionLoading(false)
   }
 
   const handleVerify = async () => {
     if (verifyCode.length !== 6) {
-      setError('Please enter a 6-digit code.')
+      setError('Please enter a 6-digit verification code.')
       return
     }
 
@@ -82,12 +91,12 @@ export default function TotpSetup() {
       if (verify.error) throw verify.error
 
       setIsEnrolled(true)
-      setSuccessMsg('2FA is enabled ✓')
+      setSuccessMsg('Two-Factor Authentication successfully enabled.')
       setQrCode('')
       setSecret('')
       setVerifyCode('')
-    } catch (err: any) {
-      setError('Incorrect code, please try again')
+    } catch {
+      setError('Incorrect verification code. Please check your authenticator app and try again.')
     } finally {
       setActionLoading(false)
     }
@@ -98,106 +107,149 @@ export default function TotpSetup() {
     setActionLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.mfa.unenroll({ factorId })
-    if (!error) {
+    const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId })
+    if (!unenrollError) {
       setIsEnrolled(false)
       setFactorId('')
-      setSuccessMsg('2FA has been disabled.')
-      setTimeout(() => setSuccessMsg(''), 3000)
+      setSuccessMsg('Two-Factor Authentication has been disabled.')
+      setTimeout(() => setSuccessMsg(''), 4000)
     } else {
-      setError('Failed to disable 2FA.')
+      setError('Failed to disable 2FA. Please try again.')
     }
     setActionLoading(false)
   }
 
-  const copySecret = () => {
-    navigator.clipboard.writeText(secret)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const copySecret = async () => {
+    try {
+      await navigator.clipboard.writeText(secret)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Fallback
+    }
   }
 
   if (loading) {
-    return <div className="p-6 bg-white border rounded-xl">Loading 2FA status...</div>
+    return (
+      <div className="paper-tag rounded-3xl p-6 text-xs text-slate-muted">
+        Checking Two-Factor Authentication status...
+      </div>
+    )
   }
 
   return (
-    <div className="p-6 md:p-8 bg-white border border-gray-200 rounded-2xl shadow-sm">
-      <h2 className="text-xl font-bold text-gray-900 mb-2">Two-Factor Authentication (Authenticator App)</h2>
-      <p className="text-gray-500 mb-6 text-sm">
-        Add an extra layer of security to your account using a TOTP app like Google Authenticator or Authy.
-      </p>
+    <div className="paper-tag rounded-3xl p-6 sm:p-7 space-y-5">
+      <div>
+        <h2 className="text-base font-serif font-bold text-ink flex items-center gap-2">
+          <ShieldCheck className="w-5 h-5 text-spruce stroke-[2.2]" />
+          <span>Authenticator App (TOTP 2FA)</span>
+        </h2>
+        <p className="text-xs text-slate-muted mt-0.5 leading-relaxed">
+          Protect your registry and delivery addresses with time-based one-time codes from Google Authenticator, 1Password, or Authy.
+        </p>
+      </div>
 
       {successMsg && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl flex items-center gap-2 font-medium">
-          <CheckCircle2 size={20} /> {successMsg}
+        <div className="p-3.5 rounded-xl bg-spruce-light border border-spruce/30 text-spruce text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{successMsg}</span>
         </div>
       )}
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl font-medium">
-          {error}
+        <div className="p-3.5 rounded-xl bg-ribbon-light border border-ribbon/20 text-ribbon text-xs flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{error}</span>
         </div>
       )}
 
       {isEnrolled ? (
-        <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-xl">
-          <span className="font-semibold text-green-600 flex items-center gap-2 mb-3 sm:mb-0">
-            <CheckCircle2 size={20} /> 2FA is Active
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-spruce-light/60 border border-spruce/20 rounded-2xl gap-3">
+          <span className="font-semibold text-xs text-spruce flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-spruce" />
+            <span>2FA Protection Active</span>
           </span>
           <button
             onClick={handleDisable}
             disabled={actionLoading}
-            className="px-5 py-2.5 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+            type="button"
+            className="px-4 py-2 bg-white text-ribbon border border-ribbon/30 rounded-xl text-xs font-semibold hover:bg-ribbon-light transition-colors disabled:opacity-50 cursor-pointer self-start sm:self-auto"
           >
             {actionLoading ? 'Disabling...' : 'Disable 2FA'}
           </button>
         </div>
       ) : qrCode ? (
-        <div className="flex flex-col items-center max-w-sm mx-auto p-6 bg-gray-50 border border-gray-200 rounded-xl">
-          <h3 className="font-bold text-gray-800 mb-4 text-center">Scan this QR Code</h3>
+        <div className="flex flex-col items-center max-w-sm mx-auto p-6 bg-parchment-light/60 border border-parchment rounded-2xl space-y-4">
+          <h3 className="text-sm font-semibold text-ink text-center">
+            Scan with Authenticator
+          </h3>
 
           <div
-            className="w-[200px] h-[200px] bg-white p-2 rounded-lg shadow-sm mb-6"
+            className="w-[180px] h-[180px] bg-white p-2.5 rounded-xl border border-parchment shadow-xs flex items-center justify-center"
             dangerouslySetInnerHTML={{ __html: qrCode }}
           />
 
-          <div className="w-full mb-6">
-            <p className="text-xs text-gray-500 font-semibold uppercase mb-1">Manual Entry Code</p>
-            <div className="flex items-center gap-2 bg-white border border-gray-200 p-2 rounded-lg">
-              <code className="flex-1 text-sm text-gray-800 break-all">{secret}</code>
-              <button onClick={copySecret} className="p-2 text-gray-500 hover:text-black bg-gray-100 rounded-md">
-                {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+          <div className="w-full space-y-1">
+            <span className="text-[10px] font-semibold text-slate-muted uppercase tracking-wider block">
+              Manual Setup Key
+            </span>
+            <div className="flex items-center gap-2 bg-white border border-parchment p-2 rounded-xl">
+              <code className="flex-1 text-xs text-ink font-mono break-all">{secret}</code>
+              <button
+                onClick={copySecret}
+                type="button"
+                className="p-1.5 text-slate-muted hover:text-ink bg-parchment-light rounded-lg transition-colors cursor-pointer"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-spruce" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
             </div>
           </div>
 
-          <div className="w-full">
-            <label className="block text-sm font-semibold text-gray-700 mb-2 text-center">Enter 6-digit code</label>
-            <input
-              type="text"
-              maxLength={6}
-              value={verifyCode}
-              onChange={(e) => setVerifyCode(e.target.value.replace(/[^0-9]/g, ''))}
-              placeholder="000000"
-              className="w-full text-center text-3xl tracking-[0.5em] py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none mb-4"
-            />
+          <div className="w-full space-y-3 pt-2">
+            <div>
+              <label className="block text-xs font-semibold text-ink mb-1.5 text-center">
+                Enter 6-digit confirmation code
+              </label>
+              <input
+                type="text"
+                maxLength={6}
+                value={verifyCode}
+                onChange={(e) => setVerifyCode(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="000000"
+                className="w-full text-center text-2xl font-mono tracking-[0.3em] py-2.5 border border-parchment rounded-xl bg-white text-ink focus:outline-none focus:border-ink shadow-2xs"
+              />
+            </div>
             <button
               onClick={handleVerify}
               disabled={actionLoading || verifyCode.length !== 6}
-              className="w-full bg-blue-600 text-white font-medium py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              type="button"
+              className="w-full bg-ink text-white hover:bg-ink/90 active:scale-98 disabled:opacity-40 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
             >
-              {actionLoading ? 'Verifying...' : 'Verify & Enable'}
+              {actionLoading ? 'Verifying...' : 'Verify & Activate 2FA'}
             </button>
           </div>
         </div>
       ) : (
-        <button
-          onClick={handleEnable}
-          disabled={actionLoading}
-          className="bg-black text-white px-6 py-3 rounded-xl font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
-        >
-          {actionLoading ? 'Loading...' : 'Enable 2FA'}
-        </button>
+        <div>
+          <button
+            onClick={handleEnable}
+            disabled={actionLoading}
+            type="button"
+            className="inline-flex items-center gap-2 bg-ink text-white hover:bg-ink/90 active:scale-98 disabled:opacity-50 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
+          >
+            {actionLoading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Generating QR Key...</span>
+              </>
+            ) : (
+              <>
+                <KeyRound className="w-3.5 h-3.5 stroke-[2.2]" />
+                <span>Enable Authenticator 2FA</span>
+              </>
+            )}
+          </button>
+        </div>
       )}
     </div>
   )

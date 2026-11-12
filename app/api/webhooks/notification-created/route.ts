@@ -50,9 +50,14 @@ export async function POST(req: Request) {
       throw new Error('Reservation not found')
     }
 
-    // @ts-ignore - Supabase nested fetch response type casting
-    const itemTitle = escapeHtml(String(reservation.wishlist_items?.title || 'an item'))
-    const gifterName = reservation.is_anonymous ? 'Someone' : escapeHtml(String(reservation.gifter_contact || 'Someone'))
+    const reservationData = reservation as unknown as {
+      is_anonymous: boolean
+      gifter_contact: string | null
+      wishlist_items: { title: string | null } | null
+    }
+
+    const itemTitle = escapeHtml(String(reservationData.wishlist_items?.title || 'an item'))
+    const gifterName = reservationData.is_anonymous ? 'Someone' : escapeHtml(String(reservationData.gifter_contact || 'Someone'))
 
     // ৪. Resend দিয়ে ইমেইল পাঠানো
     // বিঃদ্রঃ নিজের ভেরিফায়েড ডোমেইন যোগ করলে 'onboarding@resend.dev' পরিবর্তন করে নিজের ইমেইল (যেমন hello@yourdomain.com) দিতে হবে।
@@ -84,8 +89,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true }, { status: 200 })
 
-  } catch (error: any) {
-    console.error('Webhook Error:', error.message)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Webhook Error:', message)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

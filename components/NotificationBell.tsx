@@ -10,7 +10,6 @@ export default function NotificationBell({ userId }: { userId: string }) {
   const supabase = createClient()
 
   useEffect(() => {
-    // প্রাথমিক আনরিড কাউন্ট ফেচ করা
     const fetchCount = async () => {
       const { count } = await supabase
         .from('notifications')
@@ -22,7 +21,6 @@ export default function NotificationBell({ userId }: { userId: string }) {
     }
     fetchCount()
 
-    // Realtime সাবস্ক্রিপশন
     const channel = supabase.channel(`bell_notifications-${userId}-${Math.random()}`)
       .on('postgres_changes', {
         event: 'INSERT',
@@ -40,10 +38,14 @@ export default function NotificationBell({ userId }: { userId: string }) {
   }, [userId, supabase])
 
   return (
-    <Link href="/dashboard/notifications" className="relative p-2 text-gray-600 hover:text-black transition-colors rounded-full hover:bg-gray-100">
-      <Bell size={24} />
+    <Link
+      href="/dashboard/notifications"
+      aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
+      className="relative p-2 text-slate-muted hover:text-ink hover:bg-parchment-light rounded-xl transition-all cursor-pointer"
+    >
+      <Bell className="w-5 h-5 stroke-[1.8]" />
       {unreadCount > 0 && (
-        <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white">
+        <span className="absolute top-1 right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-ribbon text-[10px] font-bold text-white shadow-xs">
           {unreadCount > 99 ? '99+' : unreadCount}
         </span>
       )}

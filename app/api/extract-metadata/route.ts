@@ -96,7 +96,7 @@ export async function POST(req: Request) {
       null;
 
     return NextResponse.json({ title, image, description });
-  } catch (err) {
+  } catch {
     // যেকোনো অপ্রত্যাশিত এরর হলেও 200 স্ট্যাটাসে null রিটার্ন করবে
     return NextResponse.json({ title: null, image: null, description: null });
   }

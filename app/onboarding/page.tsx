@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import OnboardingForm from './OnboardingForm'
+import { Sparkles } from 'lucide-react'
 
 export default async function OnboardingPage() {
   const supabase = await createClient()
@@ -10,25 +11,30 @@ export default async function OnboardingPage() {
     redirect('/login')
   }
 
-  // ইউজারের বর্তমান প্রোফাইল ফেচ করা
+  // Fetch current profile
   const { data: profile } = await supabase
     .from('profiles')
     .select('username, pet_name')
     .eq('id', user.id)
     .single()
 
-  // ইউজারনেম যদি 'user_' দিয়ে শুরু না হয়, তার মানে সে আগেই নাম সেট করেছে
+  // If user already claimed a non-temporary username, redirect to dashboard
   if (!profile || !profile.username?.startsWith('user_')) {
     redirect('/dashboard')
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Choose your username</h1>
-          <p className="text-gray-500 text-sm">
-            Please select a unique username for your profile.
+    <main className="flex min-h-screen items-center justify-center bg-cotton px-4 py-12">
+      <div className="w-full max-w-md paper-tag rounded-3xl p-6 sm:p-8 space-y-6">
+        <div className="text-center space-y-2">
+          <div className="w-12 h-12 rounded-2xl bg-parchment-light border border-parchment flex items-center justify-center mx-auto text-ink shadow-2xs">
+            <Sparkles className="w-6 h-6 text-ribbon stroke-[2.2]" />
+          </div>
+          <h1 className="text-2xl font-serif font-bold text-ink">
+            Claim Your Unique Handle
+          </h1>
+          <p className="text-xs text-slate-muted max-w-xs mx-auto leading-relaxed">
+            Choose your permanent bio-link username. Friends will use this to browse and reserve items from your wishlist.
           </p>
         </div>
 

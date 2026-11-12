@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import AddWishlistItemForm from '@/components/AddWishlistItemForm'
 import SortableWishlist from '@/components/SortableWishlist'
+import { ExternalLink, PackageOpen } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -11,35 +13,76 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  // sort_order অনুযায়ী উইশলিস্ট আইটেম ফেচ করা
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('username, pet_name')
+    .eq('id', user.id)
+    .single()
+
   const { data: items } = await supabase
     .from('wishlist_items')
     .select('*')
     .eq('user_id', user.id)
     .order('sort_order', { ascending: true })
 
-  return (
-    <div className="max-w-3xl mx-auto space-y-8">
+  const totalCount = items?.length || 0
+  const reservedCount = items?.filter(i => i.status === 'reserved' || i.status === 'gifted').length || 0
 
-      {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">My Wishlist</h1>
-        <p className="text-gray-500 mt-1">Add products, edit details, and rearrange your wishlist.</p>
+  return (
+    <div className="space-y-8">
+
+      {/* Page Title & Status Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-ink tracking-tight">
+            My Wishlist
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-muted mt-0.5">
+            {totalCount} {totalCount === 1 ? 'item' : 'items'} in your registry
+            {reservedCount > 0 && ` · ${reservedCount} being gifted`}
+          </p>
+        </div>
+
+        {profile?.username && (
+          <Link
+            href={`/${profile.username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 self-start sm:self-auto px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-parchment text-ink hover:bg-parchment-light transition-all shadow-2xs"
+          >
+            <span>Preview Public View</span>
+            <ExternalLink className="w-3.5 h-3.5 text-slate-muted" />
+          </Link>
+        )}
       </div>
 
-      {/* Add New Item Form */}
-      <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      {/* Add New Item Form Shell */}
+      <section className="paper-tag rounded-3xl p-6 sm:p-7">
         <AddWishlistItemForm userId={user.id} />
       </section>
 
-      {/* Draggable Wishlist Items List */}
-      <section>
+      {/* Sortable Wishlist Items Section */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-sm font-semibold text-ink">
+            Organize & Prioritize
+          </h2>
+          <span className="text-xs text-slate-muted">
+            Drag items to set their order
+          </span>
+        </div>
+
         {items && items.length > 0 ? (
           <SortableWishlist items={items} />
         ) : (
-          <div className="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-10 text-center">
-            <p className="text-gray-500 font-medium">আপনার উইশলিস্টে এখনো কোনো আইটেম নেই।</p>
-            <p className="text-sm text-gray-400 mt-1">উপরের ফর্মে কোনো প্রোডাক্টের লিংক পেস্ট করে শুরু করুন।</p>
+          <div className="paper-tag rounded-3xl p-10 sm:p-14 text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-parchment-light border border-parchment flex items-center justify-center mx-auto text-slate-muted">
+              <PackageOpen className="w-6 h-6 stroke-1" />
+            </div>
+            <h3 className="text-base font-semibold text-ink">Your registry is empty</h3>
+            <p className="text-xs text-slate-muted max-w-sm mx-auto leading-relaxed">
+              Paste a product link in the form above to add your first wish. We&apos;ll pull in photos, titles, and pricing automatically.
+            </p>
           </div>
         )}
       </section>

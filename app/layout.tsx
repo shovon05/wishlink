@@ -1,18 +1,13 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 
-// Inter ফন্ট লোড করা হচ্ছে
-const inter = Inter({ subsets: ['latin'] })
-
-// গ্লোবাল মেটাডেটা কনফিগারেশন
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: {
-    default: 'Wishlink - Share Your Wishlist',
+    default: 'Wishlink — Share What You Wish For',
     template: '%s | Wishlink'
   },
-  description: 'Create a beautiful wishlist and let your friends reserve gifts for you effortlessly.',
+  description: 'Create a tactile, privacy-first wishlist. Share one link in your bio and receive gifts without leaking your private address.',
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -24,7 +19,6 @@ export const metadata: Metadata = {
   }
 }
 
-// মূল লেআউট কম্পোনেন্ট
 export default function RootLayout({
   children,
 }: {
@@ -32,7 +26,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="font-sans bg-cotton text-ink antialiased selection:bg-ribbon/15 selection:text-ribbon min-h-screen">
         {children}
       </body>
     </html>

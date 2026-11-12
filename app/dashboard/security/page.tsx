@@ -1,24 +1,49 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import TotpSetup from '@/components/TotpSetup' // 2FA কম্পোনেন্ট ইম্পোর্ট করা হলো
+import TotpSetup from '@/components/TotpSetup'
+import { KeyRound, Plus, Trash2, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+
+interface PasskeyRecord {
+  id: string
+  friendly_name?: string
+  created_at: string
+}
 
 export default function SecurityPage() {
   const supabase = createClient()
-  const [passkeys, setPasskeys] = useState<any[]>([])
+  const [passkeys, setPasskeys] = useState<PasskeyRecord[]>([])
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    fetchPasskeys()
-  }, [])
+  const fetchPasskeys = useCallback(async () => {
+    try {
+      const { data } = await supabase.auth.passkey.list()
+      if (data) setPasskeys(data as unknown as PasskeyRecord[])
+    } catch {
+      // Passkey list retrieval fallback
+    }
+  }, [supabase])
 
-  const fetchPasskeys = async () => {
-    const { data } = await supabase.auth.passkey.list()
-    if (data) setPasskeys(data)
-  }
+  useEffect(() => {
+    let ignore = false
+    const init = async () => {
+      try {
+        const { data } = await supabase.auth.passkey.list()
+        if (!ignore && data) {
+          setPasskeys(data as unknown as PasskeyRecord[])
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    init()
+    return () => {
+      ignore = true
+    }
+  }, [supabase])
 
   const handleAddPasskey = async () => {
     setErrorMsg('')
@@ -27,91 +52,138 @@ export default function SecurityPage() {
 
     try {
       if (!window.PublicKeyCredential) {
-        throw new Error('আপনার ডিভাইস বা ব্রাউজার Passkey সাপোর্ট করে না।')
+        throw new Error('Your browser or hardware does not support Passkey registration.')
       }
 
-      const { data, error } = await supabase.auth.registerPasskey()
+      const { error } = await supabase.auth.registerPasskey()
 
       if (error) {
         if (error.message.toLowerCase().includes('cancel') || error.message.includes('NotAllowedError')) {
-          throw new Error('আপনি Passkey প্রসেসটি বাতিল করেছেন।')
+          throw new Error('Passkey creation prompt was cancelled.')
         }
-        throw new Error('Passkey যোগ করতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।')
+        throw new Error('Failed to register Passkey. Please try again.')
       }
 
-      setSuccessMsg('সফলভাবে নতুন Passkey যুক্ত হয়েছে!')
+      setSuccessMsg('New Passkey enrolled successfully.')
       fetchPasskeys()
-    } catch (err: any) {
-      setErrorMsg(err.message || 'নেটওয়ার্ক বা অজানা কোনো সমস্যা হয়েছে।')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred during passkey enrollment.'
+      setErrorMsg(message)
     } finally {
       setLoading(false)
     }
   }
 
   const handleRemovePasskey = async (id: string) => {
+    if (!confirm('Remove this passkey from your account?')) return
     setLoading(true)
     setErrorMsg('')
 
     try {
       const { error } = await supabase.auth.passkey.delete({ passkeyId: id })
-      if (error) throw new Error('Passkey মুছতে ব্যর্থ হয়েছে।')
+      if (error) throw new Error('Failed to remove passkey.')
 
-      setSuccessMsg('Passkey সফলভাবে মুছে ফেলা হয়েছে।')
+      setSuccessMsg('Passkey removed successfully.')
       fetchPasskeys()
-    } catch (err: any) {
-      setErrorMsg(err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An error occurred while removing the passkey.'
+      setErrorMsg(message)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="max-w-3xl space-y-6">
 
-      {/* Page Header */}
+      {/* Page Title */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Security Settings</h1>
-        <p className="text-gray-500 mt-1">Manage your account security, passkeys, and two-factor authentication.</p>
+        <h1 className="text-2xl sm:text-3xl font-serif font-bold text-ink tracking-tight">
+          Security & Credentials
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-muted mt-0.5">
+          Manage hardware passkeys, biometric authentication, and multi-factor security.
+        </p>
       </div>
 
+      {errorMsg && (
+        <div className="p-3.5 rounded-xl bg-ribbon-light border border-ribbon/20 text-ribbon text-xs flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
+      {successMsg && (
+        <div className="p-3.5 rounded-xl bg-spruce-light border border-spruce/30 text-spruce text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{successMsg}</span>
+        </div>
+      )}
+
       {/* 1. Passkey Section */}
-      <div className="p-6 md:p-8 bg-white border border-gray-200 rounded-2xl shadow-sm">
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Passkeys (Passwordless Login)</h2>
-        <p className="text-gray-500 mb-6 text-sm">
-          Use your fingerprint, face scan, or screen lock to sign in securely without a password.
-        </p>
-
-        {errorMsg && <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6 font-medium">{errorMsg}</div>}
-        {successMsg && <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl mb-6 font-medium">{successMsg}</div>}
-
-        <div className="mb-8">
-          <button
-            onClick={handleAddPasskey}
-            disabled={loading}
-            className="bg-black text-white px-6 py-3 rounded-xl font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors"
-          >
-            {loading ? 'Processing...' : 'Add a Passkey'}
-          </button>
+      <div className="paper-tag rounded-3xl p-6 sm:p-7 space-y-5">
+        <div>
+          <h2 className="text-base font-serif font-bold text-ink flex items-center gap-2">
+            <KeyRound className="w-5 h-5 text-ink stroke-[2.2]" />
+            <span>Biometric Passkeys (Passwordless)</span>
+          </h2>
+          <p className="text-xs text-slate-muted mt-0.5 leading-relaxed">
+            Use Touch ID, Face ID, Windows Hello, or a YubiKey to sign in instantly without typing a password.
+          </p>
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">Your Saved Passkeys</h3>
+          <button
+            onClick={handleAddPasskey}
+            disabled={loading}
+            type="button"
+            className="inline-flex items-center gap-1.5 bg-ink text-white hover:bg-ink/90 active:scale-98 disabled:opacity-50 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Enrolling Passkey...</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Add New Passkey</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        <div className="space-y-2 pt-2 border-t border-parchment">
+          <span className="text-[11px] font-semibold text-slate-muted block">
+            Enrolled Hardware & Biometric Keys
+          </span>
+
           {passkeys.length === 0 ? (
-            <p className="text-gray-500 bg-gray-50 p-4 rounded-xl border border-gray-100">কোনো Passkey যুক্ত করা নেই।</p>
+            <p className="text-xs text-slate-muted bg-parchment-light/60 p-4 rounded-2xl border border-parchment">
+              No passkeys enrolled on this account yet. Add one above for instant, passwordless sign-in.
+            </p>
           ) : (
-            <ul className="space-y-3">
+            <ul className="space-y-2.5">
               {passkeys.map((pk) => (
-                <li key={pk.id} className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-200">
-                  <div>
-                    <p className="font-semibold text-gray-900">{pk.friendly_name || 'Unknown Device'}</p>
-                    <p className="text-xs text-gray-500 mt-1">Created: {new Date(pk.created_at).toLocaleDateString()}</p>
+                <li
+                  key={pk.id}
+                  className="flex justify-between items-center bg-white p-3.5 rounded-2xl border border-parchment shadow-2xs"
+                >
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-semibold text-ink">
+                      {pk.friendly_name || 'Biometric Credential'}
+                    </p>
+                    <p className="text-[10px] text-slate-muted">
+                      Enrolled on {new Date(pk.created_at).toLocaleDateString()}
+                    </p>
                   </div>
                   <button
                     onClick={() => handleRemovePasskey(pk.id)}
                     disabled={loading}
-                    className="text-red-600 hover:text-red-800 text-sm font-semibold disabled:opacity-50 px-3 py-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                    type="button"
+                    className="p-1.5 rounded-lg text-slate-muted hover:text-ribbon hover:bg-ribbon-light transition-colors cursor-pointer"
                   >
-                    Remove
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </li>
               ))}

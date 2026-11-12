@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { ShieldCheck, Loader2, AlertCircle } from 'lucide-react'
 
 export default function MfaChallengePage() {
   const supabase = createClient()
@@ -25,7 +26,6 @@ export default function MfaChallengePage() {
       const { data, error: listError } = await supabase.auth.mfa.listFactors()
       const factor = data?.totp?.find((f) => f.status === 'verified')
 
-      // 2FA চালু না থাকলে এই পেজের দরকার নেই
       if (listError || !factor) {
         router.replace('/dashboard')
         return
@@ -58,7 +58,7 @@ export default function MfaChallengePage() {
       router.replace('/dashboard')
       router.refresh()
     } catch {
-      setError('Incorrect code, please try again.')
+      setError('Incorrect verification code. Please check your authenticator app and try again.')
       setCode('')
       setLoading(false)
     }
@@ -66,49 +66,73 @@ export default function MfaChallengePage() {
 
   if (!ready) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-400">
-        Loading...
+      <main className="min-h-screen flex flex-col items-center justify-center bg-cotton text-slate-muted gap-2">
+        <Loader2 className="w-5 h-5 animate-spin text-ink" />
+        <span className="text-xs">Preparing security challenge...</span>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-        <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">Two-Factor Verification</h1>
-        <p className="text-sm text-gray-500 text-center mb-6">
-          Enter the 6-digit code from your authenticator app.
-        </p>
+    <main className="min-h-screen flex items-center justify-center bg-cotton px-4 py-12">
+      <div className="w-full max-w-sm paper-tag rounded-3xl p-6 sm:p-8 space-y-6">
+        <div className="text-center space-y-2">
+          <div className="w-12 h-12 rounded-2xl bg-spruce-light border border-spruce/30 flex items-center justify-center mx-auto text-spruce shadow-2xs">
+            <ShieldCheck className="w-6 h-6 stroke-[2.2]" />
+          </div>
+          <h1 className="text-2xl font-serif font-bold text-ink">
+            Two-Factor Challenge
+          </h1>
+          <p className="text-xs text-slate-muted leading-relaxed">
+            Enter the 6-digit verification code from your authenticator application (Google Authenticator, 1Password, or Authy).
+          </p>
+        </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-sm mb-4">
-            {error}
+          <div className="p-3.5 rounded-xl bg-ribbon-light border border-ribbon/20 text-ribbon text-xs flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleVerify} className="flex flex-col gap-4">
-          <input
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            autoFocus
-            maxLength={6}
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
-            placeholder="000000"
-            className="w-full text-center text-3xl tracking-[0.5em] py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          />
+        <form onSubmit={handleVerify} className="space-y-4">
+          <div>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              autoFocus
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="000000"
+              className="w-full text-center text-3xl font-mono tracking-[0.4em] py-3.5 border border-parchment rounded-2xl bg-white text-ink placeholder:text-slate-muted/30 focus:outline-none focus:border-ink shadow-2xs transition-colors"
+            />
+          </div>
+
           <button
             type="submit"
             disabled={code.length !== 6 || loading}
-            className="w-full bg-black text-white font-medium py-3 rounded-xl hover:bg-gray-800 disabled:opacity-50 transition-colors"
+            className="w-full inline-flex items-center justify-center gap-2 bg-ink text-white hover:bg-ink/90 active:scale-98 disabled:opacity-50 py-3.5 rounded-xl text-sm font-semibold transition-all shadow-xs cursor-pointer"
           >
-            {loading ? 'Verifying...' : 'Verify'}
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Verifying...</span>
+              </>
+            ) : (
+              <span>Verify & Continue</span>
+            )}
           </button>
         </form>
 
-        <form action="/auth/signout" method="post" className="mt-4 text-center">
-          <button className="text-sm text-gray-500 hover:text-gray-900">Sign out</button>
+        <form action="/auth/signout" method="post" className="text-center pt-2 border-t border-parchment">
+          <button
+            type="submit"
+            className="text-xs font-medium text-slate-muted hover:text-ink transition-colors cursor-pointer"
+          >
+            Sign out of this session
+          </button>
         </form>
       </div>
     </main>

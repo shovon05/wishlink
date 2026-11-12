@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { Check, X, Loader2, ArrowRight } from 'lucide-react'
 
 const RESERVED_WORDS = [
   'api', 'auth', 'login', 'logout', 'signup', 'register',
@@ -20,23 +21,18 @@ export default function OnboardingForm({ userId, petName }: { userId: string, pe
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null)
   const [isChecking, setIsChecking] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [suggestions, setSuggestions] = useState<string[]>([])
 
-  // pet_name থেকে সাজেশন তৈরি
-  useEffect(() => {
-    if (petName) {
-      const base = petName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
-      if (base.length >= 3) {
-        setSuggestions([
-          base,
-          `${base}${Math.floor(Math.random() * 100)}`,
-          `${base}_${Math.floor(Math.random() * 10)}`
-        ])
-      }
-    }
+  const suggestions = useMemo(() => {
+    if (!petName) return []
+    const base = petName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+    if (base.length < 3) return []
+    return [
+      base,
+      `${base}42`,
+      `${base}_7`
+    ]
   }, [petName])
 
-  // Debounce লজিক এবং রিয়েল-টাইম এভেইলেবিলিটি চেক
   useEffect(() => {
     const checkAvailability = async () => {
       if (!username) {
@@ -45,17 +41,24 @@ export default function OnboardingForm({ userId, petName }: { userId: string, pe
         return
       }
 
-      // ক্লায়েন্ট সাইড ফরম্যাট ভ্যালিডেশন
+      // Format validation: 3-30 letters, numbers, underscores
       const isValidFormat = /^[a-zA-Z0-9_]{3,30}$/.test(username)
       if (!isValidFormat) {
-        setError('ইউজারনেম ৩-৩০ অক্ষরের হতে হবে এবং শুধু a-z, A-Z, 0-9, _ ব্যবহার করা যাবে।')
+        setError('Username must be 3-30 characters (letters, numbers, underscores only).')
         setIsAvailable(null)
         return
       }
 
-      // রিজার্ভড শব্দ চেক
+      // Guard against reserved user_* prefix
+      if (username.toLowerCase().startsWith('user_')) {
+        setError('Usernames cannot begin with "user_" as that prefix is reserved.')
+        setIsAvailable(null)
+        return
+      }
+
+      // Check against reserved route keywords
       if (RESERVED_WORDS.includes(username.toLowerCase())) {
-        setError('এই ইউজারনেমটি ব্যবহার করা যাবে না।')
+        setError('This handle is a reserved system word. Please choose another.')
         setIsAvailable(null)
         return
       }
@@ -63,7 +66,6 @@ export default function OnboardingForm({ userId, petName }: { userId: string, pe
       setError('')
       setIsChecking(true)
 
-      // ডাটাবেসে case-insensitive চেক (ilike ব্যবহার করে)
       const { data } = await supabase
         .from('profiles')
         .select('id')
@@ -71,16 +73,16 @@ export default function OnboardingForm({ userId, petName }: { userId: string, pe
         .maybeSingle()
 
       if (data) {
-        setIsAvailable(false) // কেউ আগেই নিয়ে নিয়েছে
+        setIsAvailable(false)
       } else {
-        setIsAvailable(true) // নামটা ফাঁকা আছে
+        setIsAvailable(true)
       }
       setIsChecking(false)
     }
 
     const timeoutId = setTimeout(() => {
       checkAvailability()
-    }, 500) // 500ms debounce
+    }, 400)
 
     return () => clearTimeout(timeoutId)
   }, [username, supabase])
@@ -92,64 +94,83 @@ export default function OnboardingForm({ userId, petName }: { userId: string, pe
     setIsSubmitting(true)
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ username })
+      .update({ username: username.toLowerCase().trim() })
       .eq('id', userId)
 
     if (updateError) {
       if (updateError.code === '23505') {
-        // Unique constraint violation
-        setError('এই নামটা এইমাত্র নেওয়া হয়ে গেছে, অন্য একটা চেষ্টা করুন।')
+        setError('This handle was just claimed by someone else. Please try another.')
         setIsAvailable(false)
       } else {
-        setError('অপ্রত্যাশিত একটি ত্রুটি হয়েছে। আবার চেষ্টা করুন।')
+        setError('An unexpected error occurred. Please try again.')
       }
       setIsSubmitting(false)
     } else {
       router.push('/dashboard')
-      router.refresh() // লেআউটের সার্ভার স্টেট আপডেট করার জন্য
+      router.refresh()
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-          Username
+        <label htmlFor="username" className="block text-xs font-semibold text-ink mb-1.5">
+          Your Wishlink URL
         </label>
-        <div className="relative">
+        <div className="relative flex items-center rounded-2xl border border-parchment bg-white overflow-hidden shadow-2xs focus-within:border-ink transition-colors">
+          <span className="pl-3.5 pr-1 text-xs font-medium text-slate-muted select-none">
+            wishlink.me/
+          </span>
           <input
             id="username"
             type="text"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="e.g. cool_user99"
-            className={`w-full px-4 py-3 rounded-lg border ${
-              error ? 'border-red-500 focus:ring-red-500' :
-              isAvailable ? 'border-green-500 focus:ring-green-500' :
-              'border-gray-300 focus:ring-blue-500'
-            } focus:outline-none focus:ring-2`}
+            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-zA-Z0-9_]/g, ''))}
+            placeholder="yourname"
+            autoComplete="off"
+            autoCapitalize="none"
+            spellCheck="false"
+            className="flex-1 px-1 py-3 text-sm text-ink placeholder:text-slate-muted/50 focus:outline-none bg-transparent"
           />
-          <div className="absolute right-3 top-3.5 text-sm">
-            {isChecking && <span className="text-gray-400">Checking...</span>}
-            {!isChecking && isAvailable === true && <span className="text-green-600 font-medium">Available ✓</span>}
-            {!isChecking && isAvailable === false && <span className="text-red-500 font-medium">Already taken ✗</span>}
+
+          <div className="pr-3.5 flex items-center">
+            {isChecking && <Loader2 className="w-4 h-4 animate-spin text-slate-muted" />}
+            {!isChecking && isAvailable === true && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-spruce bg-spruce-light px-2 py-0.5 rounded-full border border-spruce/30">
+                <Check className="w-3 h-3 stroke-[2.5]" />
+                Available
+              </span>
+            )}
+            {!isChecking && isAvailable === false && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ribbon bg-ribbon-light px-2 py-0.5 rounded-full border border-ribbon/30">
+                <X className="w-3 h-3 stroke-[2.5]" />
+                Taken
+              </span>
+            )}
           </div>
         </div>
-        {error && <p className="mt-1.5 text-sm text-red-500">{error}</p>}
+
+        {error && (
+          <p className="mt-1.5 text-xs text-ribbon">
+            {error}
+          </p>
+        )}
       </div>
 
       {suggestions.length > 0 && (
-        <div>
-          <p className="text-xs text-gray-500 mb-2">Suggestions:</p>
+        <div className="space-y-1.5">
+          <span className="text-[11px] font-medium text-slate-muted block">
+            Suggested handles:
+          </span>
           <div className="flex flex-wrap gap-2">
             {suggestions.map((suggestion) => (
               <button
                 key={suggestion}
                 type="button"
                 onClick={() => setUsername(suggestion)}
-                className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                className="px-3 py-1 text-xs font-medium bg-parchment-light border border-parchment hover:border-slate-muted/40 text-ink rounded-full transition-all cursor-pointer"
               >
-                {suggestion}
+                @{suggestion}
               </button>
             ))}
           </div>
@@ -159,9 +180,19 @@ export default function OnboardingForm({ userId, petName }: { userId: string, pe
       <button
         type="submit"
         disabled={!isAvailable || !!error || isSubmitting}
-        className="mt-4 w-full bg-blue-600 text-white font-medium py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full inline-flex items-center justify-center gap-2 bg-ink text-white hover:bg-ink/90 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed py-3.5 px-4 rounded-xl text-sm font-semibold transition-all shadow-xs cursor-pointer"
       >
-        {isSubmitting ? 'Saving...' : 'Complete Setup'}
+        {isSubmitting ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Claiming Handle...</span>
+          </>
+        ) : (
+          <>
+            <span>Claim My Wishlink</span>
+            <ArrowRight className="w-4 h-4" />
+          </>
+        )}
       </button>
     </form>
   )
