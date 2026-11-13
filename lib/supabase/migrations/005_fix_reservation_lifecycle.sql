@@ -10,6 +10,9 @@ ALTER TABLE public.gift_reservations
     ADD COLUMN IF NOT EXISTS disclosure_note TEXT;
 
 -- 2. Corrected reserve_gift RPC
+-- Explicitly drop prior definition to prevent PostgreSQL ERROR 42P13 (return type mismatch on existing function)
+DROP FUNCTION IF EXISTS public.reserve_gift(UUID, BOOLEAN, TEXT);
+
 CREATE OR REPLACE FUNCTION public.reserve_gift(
     p_wishlist_item_id UUID,
     p_is_anonymous BOOLEAN DEFAULT TRUE,
@@ -162,6 +165,8 @@ GRANT EXECUTE ON FUNCTION public.reserve_gift(UUID, BOOLEAN, TEXT) TO anon, auth
 -- 3. Dedicated Consent-Based Disclosure RPCs (Fixes WL-PRIV-002)
 
 -- Approve Address Disclosure (Owner Only)
+DROP FUNCTION IF EXISTS public.approve_gift_disclosure(UUID, UUID);
+
 CREATE OR REPLACE FUNCTION public.approve_gift_disclosure(
     p_reservation_id UUID,
     p_address_id UUID
@@ -228,6 +233,8 @@ $$;
 GRANT EXECUTE ON FUNCTION public.approve_gift_disclosure(UUID, UUID) TO authenticated;
 
 -- Decline Gift Reservation (Owner Only)
+DROP FUNCTION IF EXISTS public.decline_gift_reservation(UUID);
+
 CREATE OR REPLACE FUNCTION public.decline_gift_reservation(
     p_reservation_id UUID
 )
@@ -282,6 +289,8 @@ $$;
 GRANT EXECUTE ON FUNCTION public.decline_gift_reservation(UUID) TO authenticated;
 
 -- Revoke Gift Address Disclosure (Owner Only)
+DROP FUNCTION IF EXISTS public.revoke_gift_disclosure(UUID);
+
 CREATE OR REPLACE FUNCTION public.revoke_gift_disclosure(
     p_reservation_id UUID
 )
@@ -328,6 +337,8 @@ $$;
 GRANT EXECUTE ON FUNCTION public.revoke_gift_disclosure(UUID) TO authenticated;
 
 -- 4. Hardened get_shared_address verifying revocation & expiration
+DROP FUNCTION IF EXISTS public.get_shared_address(UUID, TEXT);
+
 CREATE OR REPLACE FUNCTION public.get_shared_address(
     p_reservation_id UUID,
     p_access_token TEXT
