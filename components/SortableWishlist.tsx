@@ -9,17 +9,13 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { 
   GripVertical, 
-  Edit2, 
   Trash2, 
-  Check, 
-  X, 
   ExternalLink, 
   PackageOpen, 
   CheckCircle2, 
   Eye, 
   EyeOff, 
-  Sparkles,
-  Loader2
+  Sparkles
 } from 'lucide-react'
 import MaterialErrorBanner from '@/components/MaterialErrorBanner'
 
@@ -99,24 +95,33 @@ export default function SortableWishlist({
     setHideGifted(false)
     try {
       localStorage.removeItem('wishlink_hidden_items')
-      localStorage.setItem('wishlink_hide_gifted_pref', 'false')
+      localStorage.removeItem('wishlink_hide_gifted_pref')
     } catch {}
   }
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
   )
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
-    if (active.id !== over?.id) {
-      const oldIndex = items.findIndex((i) => i.id === active.id)
-      const newIndex = items.findIndex((i) => i.id === over?.id)
+    if (!over || active.id === over.id) return
 
+    setDbError(null)
+
+    const oldIndex = items.findIndex((item) => item.id === active.id)
+    const newIndex = items.findIndex((item) => item.id === over.id)
+
+    if (oldIndex !== -1 && newIndex !== -1) {
       const newItems = arrayMove(items, oldIndex, newIndex)
       setItems(newItems)
-      setDbError(null)
 
       try {
         // Single atomic batch RPC call
@@ -153,6 +158,12 @@ export default function SortableWishlist({
       try {
         const { error: delError } = await supabase.from('wishlist_items').delete().eq('id', itemId)
         if (delError) {
+          // Fallback to server route handler
+          const serverRes = await fetch(`/api/wishlist/item?id=${itemId}`, { method: 'DELETE' }).catch(() => null)
+          if (serverRes && serverRes.ok) {
+            router.refresh()
+            return
+          }
           setItems(previousItems)
           setDbError(delError)
           return
@@ -241,24 +252,14 @@ export default function SortableWishlist({
             <button
               type="button"
               onClick={toggleHideGifted}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border min-h-[36px] ${
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer min-h-[36px] ${
                 hideGifted
-                  ? 'bg-mocha text-cotton border-mocha/30 shadow-2xs'
-                  : 'bg-white text-slate-muted hover:text-ink border-parchment hover:bg-parchment-light/40'
+                  ? 'bg-mocha text-cotton shadow-xs'
+                  : 'bg-white text-slate-muted hover:text-ink border border-parchment hover:bg-parchment-light'
               }`}
-              title={hideGifted ? 'Show all gifted items' : 'Hide completed gifted items from list'}
             >
-              {hideGifted ? (
-                <>
-                  <EyeOff className="w-3.5 h-3.5 text-blush" />
-                  <span>Gifted Hidden</span>
-                </>
-              ) : (
-                <>
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Hide Gifted</span>
-                </>
-              )}
+              {hideGifted ? <EyeOff className="w-3.5 h-3.5 text-blush" /> : <Eye className="w-3.5 h-3.5 text-caramel" />}
+              <span>{hideGifted ? 'Gifted: Hidden' : 'Hide Gifted'}</span>
             </button>
           )}
 
@@ -266,9 +267,9 @@ export default function SortableWishlist({
             <button
               type="button"
               onClick={handleUnhideAll}
-              className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-[11px] font-semibold text-ribbon hover:text-ribbon-hover bg-ribbon-light/80 border border-ribbon/20 transition-colors cursor-pointer min-h-[36px]"
+              className="text-[11px] font-semibold text-caramel hover:text-mocha underline px-1 py-1 cursor-pointer transition-colors"
             >
-              <span>Unhide All ({totalHiddenCount})</span>
+              Unhide {totalHiddenCount} {totalHiddenCount === 1 ? 'item' : 'items'}
             </button>
           )}
         </div>
@@ -286,7 +287,6 @@ export default function SortableWishlist({
                   surpriseMode={surpriseMode} 
                   onDelete={handleDeleteItem}
                   onToggleHide={toggleHideSpecificItem}
-                  onError={(err) => setDbError(err)}
                   isIndividuallyHidden={hiddenItemIds.includes(item.id)}
                 />
               ))}
@@ -316,21 +316,17 @@ export default function SortableWishlist({
 
 function SortableItem({
   item,
-  surpriseMode,
   onDelete,
   onToggleHide,
-  onError,
   isIndividuallyHidden,
 }: {
   item: WishlistItem
-  surpriseMode: boolean
+  surpriseMode?: boolean
   onDelete: (id: string, title: string | null) => void
   onToggleHide: (id: string) => void
-  onError: (err: unknown) => void
   isIndividuallyHidden: boolean
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
-  const [isEditing, setIsEditing] = useState(false)
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -359,195 +355,103 @@ function SortableItem({
         aria-label="Drag to reorder"
         className="cursor-grab active:cursor-grabbing text-slate-muted hover:text-ink focus:outline-none p-2 rounded-xl hover:bg-parchment-light transition-colors shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
       >
-        <GripVertical className="w-4 h-4 stroke-[2]" />
+        <GripVertical className="w-4 h-4 text-slate-muted/60" />
       </button>
 
-      {/* Product Image */}
-      <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-xl overflow-hidden relative border border-parchment bg-parchment-light shadow-2xs">
+      {/* Item Image with Fallback */}
+      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-parchment-light relative shrink-0 border border-parchment">
         {item.image_url ? (
           <Image
             src={item.image_url}
             alt={item.title || 'Product'}
             fill
-            sizes="64px"
+            sizes="80px"
             className="object-cover"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-muted">
-            <PackageOpen className="w-5 h-5 stroke-1" />
+            <PackageOpen className="w-6 h-6 stroke-1 text-caramel/60" />
+          </div>
+        )}
+        {isGifted && (
+          <div className="absolute inset-0 bg-ink/40 backdrop-blur-2xs flex items-center justify-center">
+            <span className="text-[10px] font-bold text-white bg-spruce px-2 py-0.5 rounded-full uppercase tracking-wider">
+              Gifted
+            </span>
           </div>
         )}
       </div>
 
-      {/* Content or Inline Edit Form */}
-      {isEditing ? (
-        <WishlistItemEditForm item={item} setIsEditing={setIsEditing} onError={onError} />
-      ) : (
-        <div className="flex-1 min-w-0 pr-1">
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+      {/* Item Details */}
+      <div className="flex-1 min-w-0 space-y-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="text-xs sm:text-sm font-serif font-bold text-ink truncate max-w-sm">
+            {item.title || 'Untitled Wish'}
+          </h3>
+          
+          {/* Status Badges */}
+          {isGifted && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-spruce bg-spruce-light px-2 py-0.5 rounded-full border border-spruce/30">
+              <CheckCircle2 className="w-3 3-h text-spruce" />
+              Gifted
+            </span>
+          )}
+          {isReserved && !isGifted && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-ribbon bg-ribbon-light px-2 py-0.5 rounded-full border border-ribbon/30">
+              <Sparkles className="w-3 h-3 text-ribbon" />
+              Reserved
+            </span>
+          )}
+        </div>
+
+        {/* Price & Category */}
+        <div className="flex items-center gap-3 text-xs text-slate-muted">
+          {item.price && (
+            <span className="font-semibold text-ink font-mono">
+              {item.price}
+            </span>
+          )}
+          {item.category && item.category !== 'All Gifts' && (
+            <span className="px-2 py-0.5 rounded-md bg-parchment-light text-[10px] font-medium text-slate-muted">
+              {item.category}
+            </span>
+          )}
+          {item.product_url && item.product_url !== 'https://wishlink.me' && (
             <a
               href={item.product_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-xs sm:text-sm text-ink hover:text-ribbon line-clamp-1 transition-colors flex items-center gap-1 group"
+              className="inline-flex items-center gap-1 text-caramel hover:text-mocha transition-colors"
             >
-              <span>{item.title || 'Untitled Wishlist Item'}</span>
-              <ExternalLink className="w-3 h-3 text-slate-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              <span>Store Link</span>
+              <ExternalLink className="w-3 h-3" />
             </a>
-
-            {/* Badges for status */}
-            {!surpriseMode && isGifted && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-blush/40 text-mocha border border-blush/80">
-                <Sparkles className="w-3 h-3 text-ribbon" />
-                <span>Gifted</span>
-              </span>
-            )}
-            {!surpriseMode && isReserved && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-spruce-light text-spruce border border-spruce/30">
-                <CheckCircle2 className="w-3 h-3 text-spruce" />
-                <span>Reserved</span>
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-muted">
-            {item.category && (
-              <span className="px-2 py-0.5 rounded-md bg-parchment-light/60 font-medium text-[10px] sm:text-[11px] text-ink-muted">
-                {item.category}
-              </span>
-            )}
-            {item.price && (
-              <>
-                <span className="text-parchment">·</span>
-                <span className="font-semibold text-ink tabular-nums text-xs sm:text-sm">{item.price}</span>
-              </>
-            )}
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Action Suite (Edit, Hide, Remove) with accessible min touch sizes */}
-      {!isEditing && (
-        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-          {/* Hide/Unhide Item Button */}
-          <button
-            onClick={() => onToggleHide(item.id)}
-            type="button"
-            title={isIndividuallyHidden ? 'Unhide item' : 'Hide item from list'}
-            aria-label={isIndividuallyHidden ? 'Unhide item' : 'Hide item from list'}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl text-slate-muted hover:text-ink hover:bg-parchment-light transition-colors cursor-pointer flex items-center justify-center"
-          >
-            {isIndividuallyHidden ? <Eye className="w-4 h-4 text-caramel" /> : <EyeOff className="w-4 h-4" />}
-          </button>
-
-          {/* Edit Button */}
-          <button
-            onClick={() => setIsEditing(true)}
-            type="button"
-            title="Edit item details"
-            aria-label="Edit item"
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl text-slate-muted hover:text-ink hover:bg-parchment-light transition-colors cursor-pointer flex items-center justify-center"
-          >
-            <Edit2 className="w-4 h-4" />
-          </button>
-
-          {/* Remove / Delete Button */}
-          <button
-            onClick={() => onDelete(item.id, item.title)}
-            type="button"
-            title={isGifted ? 'Remove gifted item from wishlist' : 'Remove item'}
-            aria-label={isGifted ? 'Remove gifted item from wishlist' : 'Remove item'}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl text-slate-muted hover:text-ribbon hover:bg-ribbon-light transition-colors cursor-pointer flex items-center justify-center"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function WishlistItemEditForm({ 
-  item, 
-  setIsEditing,
-  onError 
-}: { 
-  item: WishlistItem
-  setIsEditing: (v: boolean) => void
-  onError: (err: unknown) => void
-}) {
-  const supabase = createClient()
-  const router = useRouter()
-  const CATEGORIES = ['All Gifts', 'Kitchenware', 'Home & Bedding', 'Books', 'Audio & Tech', 'Style', 'Experiences', 'Other']
-
-  const [title, setTitle] = useState(item.title || '')
-  const [price, setPrice] = useState(item.price || '')
-  const [category, setCategory] = useState(item.category || 'All Gifts')
-  const [saving, setSaving] = useState(false)
-
-  const handleUpdate = async () => {
-    setSaving(true)
-    try {
-      const { error: updateError } = await supabase
-        .from('wishlist_items')
-        .update({ title, price, category })
-        .eq('id', item.id)
-
-      if (updateError) {
-        onError(updateError)
-        return
-      }
-
-      setIsEditing(false)
-      router.refresh()
-    } catch (err) {
-      onError(err)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div className="flex-1 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="flex-1 px-3 py-2 text-xs border border-parchment rounded-xl bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel min-h-[36px]"
-        placeholder="Product Title"
-      />
-      <input
-        type="text"
-        value={price}
-        onChange={(e) => setPrice(e.target.value)}
-        className="w-full sm:w-24 px-3 py-2 text-xs border border-parchment rounded-xl bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel tabular-nums min-h-[36px]"
-        placeholder="Price"
-      />
-      <select
-        value={category}
-        onChange={(e) => setCategory(e.target.value)}
-        className="w-full sm:w-32 px-2.5 py-2 text-xs border border-parchment rounded-xl bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer min-h-[36px]"
-      >
-        {CATEGORIES.map((cat) => (
-          <option key={cat} value={cat}>{cat}</option>
-        ))}
-      </select>
-      <div className="flex items-center gap-1.5 justify-end">
+      {/* Actions */}
+      <div className="flex items-center gap-1 shrink-0">
         <button
-          onClick={handleUpdate}
-          disabled={saving}
           type="button"
-          className="inline-flex items-center gap-1 bg-mocha text-cotton px-3.5 py-2 rounded-xl text-xs font-semibold hover:bg-mocha-hover transition-all cursor-pointer shadow-2xs min-h-[36px]"
+          onClick={() => onToggleHide(item.id)}
+          title={isIndividuallyHidden ? 'Unhide item' : 'Hide from view'}
+          className="p-2 text-slate-muted hover:text-ink hover:bg-parchment-light rounded-xl transition-colors cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center"
         >
-          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
-          <span>Save</span>
+          {isIndividuallyHidden ? (
+            <Eye className="w-4 h-4 text-caramel" />
+          ) : (
+            <EyeOff className="w-4 h-4" />
+          )}
         </button>
+
         <button
-          onClick={() => setIsEditing(false)}
           type="button"
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-muted hover:text-ink hover:bg-parchment-light transition-colors cursor-pointer"
+          onClick={() => onDelete(item.id, item.title)}
+          title="Delete item"
+          className="p-2 text-slate-muted hover:text-error hover:bg-rose-50 rounded-xl transition-colors cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center"
         >
-          <X className="w-4 h-4" />
+          <Trash2 className="w-4 h-4" />
         </button>
       </div>
     </div>

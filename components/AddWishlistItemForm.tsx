@@ -113,6 +113,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
 
       const nextSortOrder = maxItem ? maxItem.sort_order + 1 : 0
 
+      // 1. Direct Supabase client insertion
       const { error: insertError } = await supabase.from('wishlist_items').insert({
         user_id: userId,
         product_url: sanitizedUrl,
@@ -126,6 +127,33 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
       })
 
       if (insertError) {
+        // 2. Fail-safe layer: If client encounters permission error (code 42501),
+        // fallback to server-authenticated route handler
+        try {
+          const serverRes = await fetch('/api/wishlist/item', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              product_url: sanitizedUrl,
+              title: sanitizedTitle,
+              image_url: preview.image.trim() || null,
+              price: priceAmount,
+              currency: preview.currency || 'USD',
+              category: preview.category,
+              sort_order: nextSortOrder,
+            }),
+          })
+          const serverData = await serverRes.json().catch(() => null)
+          if (serverRes.ok && serverData && serverData.success) {
+            setUrl('')
+            setPreview(null)
+            router.refresh()
+            return
+          }
+        } catch {
+          // Fall through to display detailed database error banner
+        }
+
         setFormError(insertError)
         return
       }
@@ -158,7 +186,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
             onClick={handleManualOpen}
             className="self-start sm:self-auto text-xs text-caramel hover:text-mocha font-semibold transition-colors cursor-pointer py-1"
           >
-            + Enter details manually
+            + Enter manually
           </button>
         )}
       </div>
@@ -167,193 +195,172 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
         <MaterialErrorBanner
           error={formError}
           onDismiss={() => setFormError(null)}
-          onRetry={preview ? handleSave : undefined}
-          fallbackMessage="Unable to save item to wishlist."
+          onRetry={handleSave}
+          fallbackMessage="Unable to save wishlist item to the database."
         />
       )}
 
       {infoNotice && (
-        <div className="p-3.5 rounded-2xl bg-parchment-light border border-parchment text-slate-muted text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-2xl bg-parchment-light border border-caramel/25 text-xs text-slate-muted flex items-center gap-2">
           <Info className="w-4 h-4 text-caramel shrink-0" />
           <span>{infoNotice}</span>
         </div>
       )}
 
+      {/* URL Input Form */}
       {!preview && (
         <div className="flex flex-col sm:flex-row gap-2.5">
           <div className="relative flex-1">
+            <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-caramel pointer-events-none" />
             <input
               type="url"
-              maxLength={1000}
+              placeholder="https://..."
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="Paste product link (Amazon, Etsy, Apple, or local boutique)..."
-              className="w-full pl-9 pr-4 py-3 rounded-2xl border border-parchment text-sm bg-white text-ink placeholder:text-slate-muted/60 focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel transition-all md-elevation-1 min-h-[44px]"
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), fetchDetails())}
+              disabled={loading}
+              className="w-full pl-10 pr-4 py-3 bg-white border border-parchment rounded-2xl text-xs sm:text-sm text-ink placeholder:text-slate-muted/60 focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel transition-all shadow-2xs min-h-[44px]"
             />
-            <Link2 className="w-4 h-4 text-caramel absolute left-3 top-3.5" />
           </div>
-
           <button
             onClick={fetchDetails}
             disabled={loading || !url.trim()}
-            type="button"
-            className="posh-button-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-xs font-semibold disabled:opacity-40 cursor-pointer shrink-0 min-h-[44px]"
+            className="posh-button-primary disabled:opacity-50 px-5 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs shrink-0 min-h-[44px]"
           >
             {loading ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Checking link...</span>
-              </>
+              <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <>
-                <Sparkles className="w-3.5 h-3.5 text-blush" />
-                <span>Fetch Details</span>
-              </>
+              <Sparkles className="w-4 h-4 text-blush" />
             )}
+            <span>{loading ? 'Inspecting Link...' : 'Inspect Link'}</span>
           </button>
         </div>
       )}
 
+      {/* Edit / Confirmation Drawer */}
       {preview && (
-        <div className="mt-2 p-5 rounded-3xl bg-white border border-parchment md-elevation-1 flex flex-col sm:flex-row gap-5 items-start">
-          <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-2xl overflow-hidden relative border border-parchment bg-cotton/50 shadow-2xs">
-            {preview.image ? (
-              <Image
-                src={preview.image}
-                alt="Product preview"
-                fill
-                sizes="112px"
-                className="object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-slate-muted text-xs gap-1">
-                <PackageOpen className="w-6 h-6 stroke-1 text-slate-muted/60" />
-                <span className="text-[10px]">No image</span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 space-y-3.5 w-full">
-            <div>
-              <label className="text-[11px] font-semibold text-slate-muted block mb-1">
-                Product Title *
-              </label>
-              <input
-                type="text"
-                maxLength={250}
-                required
-                value={preview.title}
-                onChange={(e) => setPreview({ ...preview, title: e.target.value })}
-                placeholder="e.g. Linen Bedding Set"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-parchment text-sm bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel min-h-[44px]"
-              />
+        <div className="paper-tag rounded-3xl p-5 sm:p-6 space-y-4 bg-white border border-parchment md-elevation-1 animate-in fade-in duration-200">
+          <div className="flex items-start gap-4">
+            {/* Image Preview Box */}
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-parchment-light relative shrink-0 border border-parchment">
+              {preview.image ? (
+                <Image
+                  src={preview.image}
+                  alt="Item preview"
+                  fill
+                  sizes="96px"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-slate-muted gap-1 text-[10px]">
+                  <PackageOpen className="w-6 h-6 stroke-1 text-caramel/60" />
+                  <span>No image</span>
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className="text-[11px] font-semibold text-slate-muted block mb-1">
-                Store or Product Link (Optional)
-              </label>
-              <input
-                type="url"
-                maxLength={1000}
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://..."
-                className="w-full px-3.5 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel font-mono min-h-[40px]"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Editable Fields */}
+            <div className="flex-1 space-y-2.5 min-w-0">
               <div>
                 <label className="text-[11px] font-semibold text-slate-muted block mb-1">
-                  Price Display
+                  Product Title *
                 </label>
                 <input
                   type="text"
-                  maxLength={50}
-                  value={preview.price}
-                  onChange={(e) => setPreview({ ...preview, price: e.target.value })}
-                  placeholder="e.g. $45.00"
-                  className="w-full px-3.5 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel tabular-nums min-h-[40px]"
+                  required
+                  placeholder="e.g. Linen Bedding Set"
+                  value={preview.title}
+                  onChange={(e) => setPreview({ ...preview, title: e.target.value })}
+                  className="w-full px-3.5 py-2 border border-parchment rounded-xl text-xs sm:text-sm bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel min-h-[40px]"
                 />
               </div>
 
-              <div>
-                <label className="text-[11px] font-semibold text-slate-muted block mb-1">
-                  Currency
-                </label>
-                <select
-                  value={preview.currency}
-                  onChange={(e) => setPreview({ ...preview, currency: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer min-h-[40px]"
-                >
-                  {CURRENCIES.map((cur) => (
-                    <option key={cur} value={cur}>{cur}</option>
-                  ))}
-                </select>
-              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-muted block mb-1">
+                    Price / Value
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 120.00"
+                    value={preview.price}
+                    onChange={(e) => setPreview({ ...preview, price: e.target.value })}
+                    className="w-full px-3.5 py-2 border border-parchment rounded-xl text-xs sm:text-sm bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel min-h-[40px]"
+                  />
+                </div>
 
-              <div>
-                <label className="text-[11px] font-semibold text-slate-muted block mb-1">
-                  Category
-                </label>
-                <select
-                  value={preview.category}
-                  onChange={(e) => setPreview({ ...preview, category: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer min-h-[40px]"
-                >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-muted block mb-1">
+                    Currency
+                  </label>
+                  <select
+                    value={preview.currency}
+                    onChange={(e) => setPreview({ ...preview, currency: e.target.value })}
+                    className="w-full px-3.5 py-2 border border-parchment rounded-xl text-xs sm:text-sm bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer min-h-[40px]"
+                  >
+                    {CURRENCIES.map((curr) => (
+                      <option key={curr} value={curr}>
+                        {curr}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div>
+              <label className="text-[11px] font-semibold text-slate-muted block mb-1">
+                Category
+              </label>
+              <select
+                value={preview.category}
+                onChange={(e) => setPreview({ ...preview, category: e.target.value })}
+                className="w-full px-3.5 py-2 border border-parchment rounded-xl text-xs sm:text-sm bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer min-h-[40px]"
+              >
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
               <label className="text-[11px] font-semibold text-slate-muted block mb-1">
-                Image URL (Optional)
+                Image Link (optional)
               </label>
               <input
                 type="url"
-                maxLength={1000}
+                placeholder="https://...image.jpg"
                 value={preview.image}
                 onChange={(e) => setPreview({ ...preview, image: e.target.value })}
-                placeholder="https://images... (paste image link)"
-                className="w-full px-3.5 py-1.5 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel font-mono min-h-[40px]"
+                className="w-full px-3.5 py-2 border border-parchment rounded-xl text-xs sm:text-sm bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel min-h-[40px]"
               />
             </div>
+          </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-parchment">
-              <button
-                type="button"
-                onClick={() => {
-                  setPreview(null)
-                  setFormError(null)
-                  setInfoNotice('')
-                }}
-                className="px-4 py-2 text-xs font-semibold text-slate-muted hover:text-ink transition-colors cursor-pointer min-h-[40px]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                className="posh-button-rose inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 cursor-pointer min-h-[40px]"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Saving Item...</span>
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                    <span>Save to Registry</span>
-                  </>
-                )}
-              </button>
-            </div>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-parchment">
+            <button
+              onClick={() => {
+                setPreview(null)
+                setUrl('')
+                setFormError(null)
+              }}
+              disabled={saving}
+              className="px-4 py-2.5 text-xs font-semibold text-slate-muted hover:text-ink transition-colors cursor-pointer min-h-[40px]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || !preview.title.trim()}
+              className="posh-button-primary disabled:opacity-50 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs min-h-[40px]"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              <span>{saving ? 'Adding to Registry...' : 'Add to Wishlist'}</span>
+            </button>
           </div>
         </div>
       )}

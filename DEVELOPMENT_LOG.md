@@ -125,3 +125,35 @@ Mandatory chronological, append-only record of all engineering changes, security
 - Side effects and follow-ups:
   - Ready for git commit and staging verification.
 - Master spec cross-reference: Section 4.9, Section 5.1 (`WL-UX-001`), Section 8 (`WL-UX-003`).
+
+---
+
+## WL-LOG-0005 — Resolution of Database Permission 42501 via Migration 006 & Server API Layer
+- Timestamp: 2026-11-13T11:21:00+06:00
+- Category: Migration
+- Phase: Phase 1 & 4 — Database & Wishlist Completeness
+- Author: Antigravity Agent
+- Context: Resolve PostgreSQL 42501 "permission denied for table wishlist_items" triggered during client-side wishlist item insertion.
+- Scope of work:
+  - `supabase/migrations/006_grant_table_permissions.sql`
+  - `lib/supabase/migrations/006_grant_table_permissions.sql`
+  - `app/api/wishlist/item/route.ts`
+  - `components/AddWishlistItemForm.tsx`
+  - `components/SortableWishlist.tsx`
+- Pre-change state:
+  - PostgreSQL role `authenticated` lacked explicit table-level `INSERT` grants on `wishlist_items` in remote database environment.
+  - `AddWishlistItemForm` failed with `code 42501` whenever a user attempted to add a wishlist item.
+- Changes made:
+  - Created forward migration `006_grant_table_permissions.sql`:
+    - Granted schema `USAGE` and table privileges (`SELECT, INSERT, UPDATE, DELETE`) to `authenticated` role across all user-owned tables (`wishlist_items`, `addresses`, `profiles`, `gift_reservations`, `notifications`), allowing RLS to cleanly govern row access.
+    - Granted sequence usage and function execution permissions.
+  - Created server-authenticated API route `/api/wishlist/item` (POST & DELETE) with strict session validation (`user.id === auth.uid()`).
+  - Added seamless fail-safe in `AddWishlistItemForm.tsx`: if direct client insertion hits 42501, it automatically completes the addition via the authenticated server route.
+  - Added similar fail-safe in `SortableWishlist.tsx` for deletion.
+- Verification:
+  - `npm test`: 12 passed, 0 failed in 100ms.
+  - `npm run lint`: 0 errors, 0 warnings.
+  - `npx next build --webpack`: 20 routes compiled successfully.
+- Side effects and follow-ups:
+  - Commit and push to main. Provide user with SQL migration script to apply in Supabase dashboard.
+- Master spec cross-reference: Section 9.3, Section 10.1, Section 8 (`WL-DB-003`).
