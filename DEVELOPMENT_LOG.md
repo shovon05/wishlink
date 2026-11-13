@@ -345,3 +345,24 @@ All timestamps are recorded in `Asia/Dhaka` (+06:00) with ISO-8601 offset format
 - Side effects and follow-ups:
   - Push changes to GitHub repository for Vercel deployment.
 - Master spec cross-reference: Section 2.1 (Profile and Identity), Section 5.1 (Visual Aesthetics).
+
+---
+
+## WL-LOG-0012 — Removed Admin Passkey Setup Callout from User Security Page
+- Timestamp: 2026-11-13T13:09:00+06:00
+- Category: Refactoring & UX
+- Phase: Phase 2 — Identity & Privacy
+- Author: Antigravity Agent
+- Context: User correctly pointed out that internal developer configuration notes (Supabase RP ID domain matching and link to the Supabase dashboard) should never be exposed to end users.
+- Scope of work:
+  - `app/dashboard/security/page.tsx`
+- Changes made:
+  - Removed the developer configuration card referencing Supabase settings and the Supabase dashboard URL.
+  - Streamlined the Passkeys section to a consumer-facing layout: "Add New Passkey" primary CTA button, clear instructions, and enrolled keys list.
+- Verification:
+  - `npm test`: 12/12 passed in 104ms.
+  - `npx tsc --noEmit`: 0 errors.
+  - `npm run lint`: 0 errors, 0 warnings.
+- Side effects and follow-ups:
+  - Push changes to GitHub repository for Vercel deployment.
+- Master spec cross-reference: Section 2.1 (Profile and Identity), Section 5.1 (Visual Aesthetics).
