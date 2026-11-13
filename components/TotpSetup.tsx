@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Copy, CheckCircle2, ShieldCheck, Check, KeyRound, Loader2, AlertCircle } from 'lucide-react'
+import MaterialErrorBanner from '@/components/MaterialErrorBanner'
+import { Copy, CheckCircle2, ShieldCheck, Check, KeyRound, Loader2 } from 'lucide-react'
 
 export default function TotpSetup() {
   const supabase = createClient()
@@ -16,7 +17,7 @@ export default function TotpSetup() {
   const [verifyCode, setVerifyCode] = useState('')
 
   // UI states
-  const [error, setError] = useState('')
+  const [errorState, setErrorState] = useState<unknown>(null)
   const [successMsg, setSuccessMsg] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -45,7 +46,7 @@ export default function TotpSetup() {
 
   const handleEnable = async () => {
     setActionLoading(true)
-    setError('')
+    setErrorState(null)
     try {
       const { data: existing } = await supabase.auth.mfa.listFactors()
       for (const f of existing?.all ?? []) {
@@ -61,8 +62,8 @@ export default function TotpSetup() {
         setQrCode(data.totp.qr_code)
         setSecret(data.totp.secret)
       }
-    } catch {
-      setError('Failed to initialize 2FA enrollment. Please try again.')
+    } catch (err) {
+      setErrorState(err)
     } finally {
       setActionLoading(false)
     }
@@ -70,12 +71,12 @@ export default function TotpSetup() {
 
   const handleVerify = async () => {
     if (verifyCode.length !== 6) {
-      setError('Please enter a 6-digit verification code.')
+      setErrorState('Please enter a 6-digit verification code.')
       return
     }
 
     setActionLoading(true)
-    setError('')
+    setErrorState(null)
     setSuccessMsg('')
 
     try {
@@ -95,8 +96,8 @@ export default function TotpSetup() {
       setQrCode('')
       setSecret('')
       setVerifyCode('')
-    } catch {
-      setError('Incorrect verification code. Please check your authenticator app and try again.')
+    } catch (err) {
+      setErrorState(err)
     } finally {
       setActionLoading(false)
     }
@@ -105,18 +106,21 @@ export default function TotpSetup() {
   const handleDisable = async () => {
     if (!window.confirm('Are you sure you want to disable Two-Factor Authentication?')) return
     setActionLoading(true)
-    setError('')
+    setErrorState(null)
 
-    const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId })
-    if (!unenrollError) {
+    try {
+      const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId })
+      if (unenrollError) throw unenrollError
+
       setIsEnrolled(false)
       setFactorId('')
       setSuccessMsg('Two-Factor Authentication has been disabled.')
       setTimeout(() => setSuccessMsg(''), 4000)
-    } else {
-      setError('Failed to disable 2FA. Please try again.')
+    } catch (err) {
+      setErrorState(err)
+    } finally {
+      setActionLoading(false)
     }
-    setActionLoading(false)
   }
 
   const copySecret = async () => {
@@ -156,11 +160,13 @@ export default function TotpSetup() {
         </div>
       )}
 
-      {error && (
-        <div className="p-3.5 rounded-2xl bg-ribbon-light border border-ribbon/30 text-ribbon text-xs flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>{error}</span>
-        </div>
+      {Boolean(errorState) && (
+        <MaterialErrorBanner
+          error={errorState}
+          onDismiss={() => setErrorState(null)}
+          onRetry={qrCode ? handleVerify : handleEnable}
+          fallbackMessage="Authenticator operation could not be completed."
+        />
       )}
 
       {isEnrolled ? (
@@ -184,10 +190,29 @@ export default function TotpSetup() {
             Scan with Authenticator
           </h3>
 
-          <div
-            className="w-[180px] h-[180px] bg-white p-2.5 rounded-xl border border-parchment shadow-xs flex items-center justify-center"
-            dangerouslySetInnerHTML={{ __html: qrCode }}
-          />
+          {/* High-fidelity SVG QR Code Container */}
+          <div className="w-[190px] h-[190px] bg-white p-3 rounded-2xl border border-parchment shadow-xs flex items-center justify-center overflow-hidden">
+            {qrCode.startsWith('data:') ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={qrCode}
+                alt="Authenticator QR Code"
+                className="w-[166px] h-[166px] object-contain"
+              />
+            ) : qrCode.startsWith('<svg') ? (
+              <div
+                className="w-[166px] h-[166px] flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"
+                dangerouslySetInnerHTML={{ __html: qrCode }}
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={`data:image/svg+xml;utf-8,${encodeURIComponent(qrCode)}`}
+                alt="Authenticator QR Code"
+                className="w-[166px] h-[166px] object-contain"
+              />
+            )}
+          </div>
 
           <div className="w-full space-y-1">
             <span className="text-[10px] font-semibold text-slate-muted uppercase tracking-wider block">
@@ -199,6 +224,7 @@ export default function TotpSetup() {
                 onClick={copySecret}
                 type="button"
                 className="p-1.5 text-slate-muted hover:text-ink bg-parchment-light rounded-lg transition-colors cursor-pointer"
+                title="Copy secret key"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-spruce" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
@@ -212,6 +238,7 @@ export default function TotpSetup() {
               </label>
               <input
                 type="text"
+                inputMode="numeric"
                 maxLength={6}
                 value={verifyCode}
                 onChange={(e) => setVerifyCode(e.target.value.replace(/[^0-9]/g, ''))}

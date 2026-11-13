@@ -149,6 +149,89 @@ export function parseAppError(error: unknown, fallbackMessage = 'An unexpected i
       }
     }
 
+    // 9. Biometric Passkey / WebAuthn Errors
+    if (
+      lowerMsg.includes('passkey') ||
+      lowerMsg.includes('webauthn') ||
+      lowerMsg.includes('notallowederror') ||
+      lowerMsg.includes('publickeycredential') ||
+      lowerMsg.includes('authenticator')
+    ) {
+      if (
+        lowerMsg.includes('cancel') ||
+        lowerMsg.includes('notallowederror') ||
+        lowerMsg.includes('abort') ||
+        lowerMsg.includes('timed out')
+      ) {
+        return {
+          title: 'Passkey Verification Dismissed',
+          message: 'The biometric prompt (Touch ID, Face ID, Windows Hello, or Security Key) was cancelled or timed out.',
+          code: 'WEBAUTHN_CANCELLED',
+          details: rawMessage,
+          isDatabaseError: false,
+          suggestion: 'Click "Add New Passkey" again and touch the sensor or scan Face ID when prompted.',
+        }
+      }
+
+      if (
+        lowerMsg.includes('not supported') ||
+        lowerMsg.includes('disabled') ||
+        lowerMsg.includes('unsupported') ||
+        lowerMsg.includes('404')
+      ) {
+        return {
+          title: 'Passkeys Configuration Required',
+          message: 'Passkey / WebAuthn authentication requires activation in your Supabase project configuration.',
+          code: 'WEBAUTHN_UNCONFIGURED',
+          hint: 'Go to Supabase Dashboard > Authentication > Security / Providers to enable Passkeys / WebAuthn.',
+          details: rawMessage,
+          isDatabaseError: false,
+          suggestion: 'Enable Passkeys in Supabase Auth settings, or use the Authenticator App (TOTP) below which is active right now.',
+        }
+      }
+
+      if (lowerMsg.includes('rp id') || lowerMsg.includes('securityerror') || lowerMsg.includes('origin')) {
+        return {
+          title: 'Passkey Domain Boundary',
+          message: 'WebAuthn passkeys must be registered from the exact site domain matching your relying party configuration.',
+          code: 'WEBAUTHN_DOMAIN_MISMATCH',
+          details: rawMessage,
+          isDatabaseError: false,
+          suggestion: 'Verify you are accessing the site via HTTPS on your production or preview domain.',
+        }
+      }
+
+      return {
+        title: 'Passkey Security Notice',
+        message: rawMessage || 'Could not complete passkey enrollment.',
+        code: code ? String(code) : 'WEBAUTHN_NOTICE',
+        details: rawMessage,
+        isDatabaseError: false,
+        suggestion: 'Ensure biometric sensors are active on your device, or use Authenticator App 2FA below.',
+      }
+    }
+
+    // 10. Multi-Factor TOTP Errors
+    if (lowerMsg.includes('factor') || lowerMsg.includes('mfa') || lowerMsg.includes('totp') || lowerMsg.includes('verification code')) {
+      if (lowerMsg.includes('invalid') || lowerMsg.includes('incorrect') || lowerMsg.includes('mismatch')) {
+        return {
+          title: 'Incorrect Verification Code',
+          message: 'The 6-digit one-time code was not accepted. Codes expire every 30 seconds.',
+          code: 'MFA_CODE_INVALID',
+          details: rawMessage,
+          isDatabaseError: false,
+          suggestion: 'Wait for a fresh 6-digit code in Google Authenticator or 1Password and re-enter it.',
+        }
+      }
+      return {
+        title: '2FA Authentication Notice',
+        message: rawMessage || 'Failed to process Two-Factor Authentication.',
+        code: code ? String(code) : 'MFA_NOTICE',
+        details: rawMessage,
+        isDatabaseError: false,
+      }
+    }
+
     // Generic object with message
     if (rawMessage) {
       const isDb = Boolean(
