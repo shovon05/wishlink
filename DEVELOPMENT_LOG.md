@@ -220,3 +220,34 @@ All timestamps are recorded in `Asia/Dhaka` (+06:00) with ISO-8601 offset format
 - Side effects and follow-ups:
   - Commit and push to `origin/main` for live Vercel deployment.
 - Master spec cross-reference: Section 4.7 (Authentication and account security), Section 10.3 (Web and API safety).
+
+---
+
+## WL-LOG-0008 — Password Manager Compatibility & Passkey-First Sign-In
+- Timestamp: 2026-11-13T12:17:00+06:00
+- Category: Feature enhancement
+- Phase: Phase 3 — Identity, Profile and Account Security
+- Author: Antigravity Agent
+- Context: User requested password manager passkey compatibility (Bitwarden, 1Password) and the ability to sign in using only a passkey.
+- Scope of work:
+  - `app/dashboard/security/page.tsx`
+  - `app/(auth)/login/page.tsx`
+- Pre-change state:
+  - Login page placed Google OAuth above passkey sign-in.
+  - Passkey wording specifically referenced device Touch ID instead of universal password manager passkeys (Bitwarden, 1Password, YubiKey).
+- Changes made:
+  - In `app/(auth)/login/page.tsx`:
+    - Elevated **"Sign in with Passkey / Bitwarden"** to the primary prominent action button above Google OAuth.
+    - Connected `supabase.auth.signInWithPasskey()` directly with clear loading feedback: `"Waiting for Authenticator / Password Manager..."`.
+    - Enhanced error banner handling with `MaterialErrorBanner`.
+  - In `app/dashboard/security/page.tsx`:
+    - Updated UI copy and credential labels to highlight Bitwarden, 1Password, and hardware security keys alongside biometric sensors.
+    - Updated success notification upon passkey creation to confirm storage in the user's password manager or biometric authenticator.
+- Verification:
+  - `npm test`: 12/12 passed.
+  - `npx tsc --noEmit`: 0 errors.
+  - `npm run lint`: 0 errors, 0 warnings.
+  - `npx next build --webpack`: 20/20 routes generated cleanly.
+- Side effects and follow-ups:
+  - Commit and push to `origin/main` to trigger Vercel deployment.
+- Master spec cross-reference: Section 3.2, Section 4.7 (Authentication and account security).

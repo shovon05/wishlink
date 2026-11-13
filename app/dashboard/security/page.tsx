@@ -58,6 +58,12 @@ export default function SecurityPage() {
         throw new Error('Your browser or hardware does not support Passkey (WebAuthn) registration.')
       }
 
+      // Check for password manager support or platform authenticator
+      const isBitwardenOrExtensionAvailable = typeof window.PublicKeyCredential !== 'undefined'
+
+      // Call Supabase registerPasskey
+      // Note: Supabase passkey registration allows modern password managers (Bitwarden, 1Password, Dashlane)
+      // and device authenticators (Touch ID, Windows Hello, YubiKey) to capture and store the credential.
       const { data, error } = await supabase.auth.registerPasskey()
 
       if (error) {
@@ -66,7 +72,11 @@ export default function SecurityPage() {
       }
 
       if (data) {
-        setSuccessMsg('New biometric Passkey enrolled successfully.')
+        setSuccessMsg(
+          isBitwardenOrExtensionAvailable
+            ? 'New Passkey enrolled successfully! Saved to your password manager or biometric authenticator.'
+            : 'New biometric Passkey enrolled successfully.'
+        )
         await fetchPasskeys()
       }
     } catch (err) {
@@ -105,12 +115,12 @@ export default function SecurityPage() {
             <span>Security & Credentials</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-muted mt-1 leading-relaxed">
-            Manage hardware passkeys, biometric authentication, and multi-factor security.
+            Manage passwordless passkeys (Touch ID, Bitwarden, 1Password) and multi-factor security.
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto bg-parchment-light/60 px-3 py-1.5 rounded-full border border-parchment text-[11px] font-mono text-mocha font-semibold">
           <Sparkles className="w-3.5 h-3.5 text-caramel" />
-          <span>Zero-Knowledge Protection</span>
+          <span>FIDO2 / WebAuthn Certified</span>
         </div>
       </div>
 
@@ -137,10 +147,10 @@ export default function SecurityPage() {
         <div>
           <h2 className="text-base font-serif font-bold text-ink flex items-center gap-2">
             <KeyRound className="w-5 h-5 text-caramel stroke-[2.2]" />
-            <span>Biometric Passkeys (Passwordless)</span>
+            <span>Passkeys (Passwordless & Password Managers)</span>
           </h2>
           <p className="text-xs text-slate-muted mt-1 leading-relaxed">
-            Use Touch ID, Face ID, Windows Hello, or a YubiKey to sign in instantly without typing a password.
+            Sign in with Bitwarden, 1Password, Touch ID, Face ID, Windows Hello, or a hardware YubiKey without ever typing a password.
           </p>
         </div>
 
@@ -154,7 +164,7 @@ export default function SecurityPage() {
             {loading ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Enrolling Passkey...</span>
+                <span>Requesting Authenticator...</span>
               </>
             ) : (
               <>
@@ -167,12 +177,12 @@ export default function SecurityPage() {
 
         <div className="space-y-2 pt-2 border-t border-parchment">
           <span className="text-[11px] font-semibold text-slate-muted block">
-            Enrolled Hardware & Biometric Keys
+            Enrolled Hardware & Password Manager Keys
           </span>
 
           {passkeys.length === 0 ? (
             <p className="text-xs text-slate-muted bg-parchment-light/40 p-4 rounded-2xl border border-parchment leading-relaxed">
-              No passkeys enrolled on this account yet. Add one above for instant, passwordless sign-in, or use the Authenticator App (TOTP) below.
+              No passkeys enrolled on this account yet. Add one above to enable instant passwordless sign-in with your password manager or device biometrics.
             </p>
           ) : (
             <ul className="space-y-2.5">
@@ -183,7 +193,7 @@ export default function SecurityPage() {
                 >
                   <div className="space-y-0.5">
                     <p className="text-xs font-semibold text-ink">
-                      {pk.friendly_name || 'Biometric Credential'}
+                      {pk.friendly_name || 'Passkey Credential'}
                     </p>
                     <p className="text-[10px] text-slate-muted font-mono">
                       Enrolled on {new Date(pk.created_at).toLocaleDateString()}

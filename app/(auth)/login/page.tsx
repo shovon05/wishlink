@@ -1,24 +1,24 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Gift, ArrowLeft, Sparkles, Fingerprint, Lock } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import MaterialErrorBanner from '@/components/MaterialErrorBanner'
+import { Gift, Lock, ArrowLeft, Fingerprint, Sparkles } from 'lucide-react'
 
 export default function LoginPage() {
-  const supabase = createClient()
   const router = useRouter()
-  const [errorMsg, setErrorMsg] = useState<unknown | null>(null)
+  const supabase = createClient()
+
+  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin')
   const [loadingGoogle, setLoadingGoogle] = useState(false)
   const [loadingPasskey, setLoadingPasskey] = useState(false)
-  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin')
+  const [errorMsg, setErrorMsg] = useState<unknown>(null)
 
   const handleGoogleLogin = async () => {
     setErrorMsg(null)
     setLoadingGoogle(true)
-
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -26,7 +26,6 @@ export default function LoginPage() {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
       })
-
       if (error) {
         setErrorMsg(error)
       }
@@ -41,17 +40,16 @@ export default function LoginPage() {
     setLoadingPasskey(true)
 
     try {
-      if (!window.PublicKeyCredential) {
-        throw new Error('Your browser or device does not currently support biometric Passkey authentication.')
+      if (typeof window === 'undefined' || !window.PublicKeyCredential) {
+        throw new Error('Your browser or device does not currently support Passkey authentication.')
       }
 
+      // Supabase Passwordless Passkey Login
+      // Prompts the browser's credential manager (Bitwarden, 1Password, Touch ID, Face ID, YubiKey)
+      // to select the user's enrolled passkey and authenticate with zero passwords.
       const { data, error } = await supabase.auth.signInWithPasskey()
 
       if (error) {
-        if (error.message.toLowerCase().includes('cancel') || error.message.includes('NotAllowedError')) {
-          setErrorMsg('Biometric sign-in was cancelled.')
-          return
-        }
         setErrorMsg(error)
         return
       }
@@ -115,7 +113,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Mode Tabs: Sign In / Create Account */}
+          {/* Segmented Auth Selector */}
           <div 
             role="tablist" 
             aria-label="Authentication Options"
@@ -145,7 +143,7 @@ export default function LoginPage() {
                   : 'text-slate-muted hover:text-ink'
               }`}
             >
-              New Registry
+              Register
             </button>
           </div>
 
@@ -154,12 +152,34 @@ export default function LoginPage() {
             <MaterialErrorBanner
               error={errorMsg}
               onDismiss={() => setErrorMsg(null)}
+              onRetry={handlePasskeyLogin}
               fallbackMessage="Authentication could not be completed."
             />
           )}
 
           {/* Authentication Actions */}
           <div className="space-y-3.5">
+            {/* 1. Primary Passkey / Passwordless Login Button */}
+            <button
+              onClick={handlePasskeyLogin}
+              disabled={loadingGoogle || loadingPasskey}
+              type="button"
+              className="posh-button-primary w-full flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold active:scale-98 disabled:opacity-50 cursor-pointer border border-mocha/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-caramel min-h-[48px] shadow-sm"
+            >
+              <Fingerprint className="w-5 h-5 text-blush stroke-[2.2]" />
+              <span>
+                {loadingPasskey ? 'Waiting for Authenticator / Password Manager...' : 'Sign in with Passkey / Bitwarden'}
+              </span>
+            </button>
+
+            {/* Elegant Divider */}
+            <div className="relative py-1.5 flex items-center justify-center">
+              <div className="w-full border-t border-parchment" />
+              <span className="bg-white px-3 text-[10px] font-semibold text-caramel uppercase tracking-widest font-mono">
+                or continue with
+              </span>
+            </div>
+
             {/* Google OAuth Button */}
             <button
               onClick={handleGoogleLogin}
@@ -177,27 +197,6 @@ export default function LoginPage() {
                 {loadingGoogle 
                   ? 'Connecting with Google...' 
                   : activeTab === 'signin' ? 'Continue with Google' : 'Sign Up with Google'}
-              </span>
-            </button>
-
-            {/* Elegant Divider */}
-            <div className="relative py-2 flex items-center justify-center">
-              <div className="w-full border-t border-parchment" />
-              <span className="bg-white px-3 text-[10px] font-semibold text-caramel uppercase tracking-widest font-mono">
-                or biometric passkey
-              </span>
-            </div>
-
-            {/* Biometric Passkey Button */}
-            <button
-              onClick={handlePasskeyLogin}
-              disabled={loadingGoogle || loadingPasskey}
-              type="button"
-              className="posh-button-primary w-full flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold active:scale-98 disabled:opacity-50 cursor-pointer border border-mocha/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-caramel min-h-[48px]"
-            >
-              <Fingerprint className="w-4 h-4 text-blush stroke-[2.2]" />
-              <span>
-                {loadingPasskey ? 'Verifying biometric passkey...' : 'Sign in with Passkey / Face ID'}
               </span>
             </button>
           </div>
@@ -219,8 +218,8 @@ export default function LoginPage() {
       </div>
 
       {/* Footer Branding */}
-      <footer className="text-center text-xs text-slate-muted py-4">
-        <span>Wishlink Studio · Curate Privately. Gift Thoughtfully.</span>
+      <footer className="w-full max-w-md text-center py-4 text-[11px] text-slate-muted">
+        <span>Wishlink &middot; Bespoke Private Registry</span>
       </footer>
     </main>
   )
