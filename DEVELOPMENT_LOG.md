@@ -278,3 +278,35 @@ All timestamps are recorded in `Asia/Dhaka` (+06:00) with ISO-8601 offset format
 - Side effects and follow-ups:
   - Commit and push to `origin/main` to deploy to Vercel production.
 - Master spec cross-reference: Section 4.3 (Product metadata extraction), Section 4.2.
+
+---
+
+## WL-LOG-0010 — Universal E-Commerce Metadata Extraction & Anti-Bot Resiliency
+- Timestamp: 2026-11-13T12:47:00+06:00
+- Category: Feature enhancement & Bug fix
+- Phase: Phase 4 — Wishlist Item Completeness
+- Author: Antigravity Agent
+- Context: User reported missing prices, images, and product details on various e-commerce sites (e.g., Daraz, modern SPAs).
+- Scope of work:
+  - `app/api/extract-metadata/route.ts`
+- Pre-change state:
+  - Generic user-agent triggered bot blocks on platforms like Daraz/Lazada (returning 404 or custom error pages).
+  - Strict throwing on non-200 responses caused the scraper to fail entirely and return 422 to the client form.
+  - Schema.org JSON-LD extraction only checked root objects and missed `@graph` multi-entity arrays common in modern Shopify, WooCommerce, and IKEA setups.
+  - Embedded client-side script states (Daraz/Lazada `app.run()`, `pdpTrackingData`) were ignored.
+- Changes made:
+  - In `app/api/extract-metadata/route.ts`:
+    - Upgraded headers with complete modern browser fingerprint (`Sec-Ch-Ua`, `Sec-Fetch-*`, `Accept`, `Accept-Language: en-US,en;q=0.9,bn;q=0.8`).
+    - Made HTML fetching resilient: handles non-200 responses gracefully without throwing.
+    - Added recursive Schema.org `@graph` traversal for Shopify and WordPress e-commerce stores.
+    - Added script-state regex scanner extracting prices and images embedded in serialized JSON states (`pdpTrackingData`, `salePrice`, `skuGalleries`, `productImage`).
+    - Added URL slug title fallback for bot-guarded platforms, ensuring clean capitalized product titles even when bot-protection hides the main body.
+    - Added dual-property return payload (`image_url` and `image`, `price` and `displayPrice`) for zero-mismatch compatibility across frontend callers.
+- Verification:
+  - `npm test`: 12/12 passed in 106ms.
+  - `npx tsc --noEmit`: 0 errors.
+  - `npm run lint`: 0 errors, 0 warnings.
+  - `npx next build --webpack`: 20/20 routes compiled cleanly.
+- Side effects and follow-ups:
+  - Commit and push to `origin/main` for live Vercel deployment.
+- Master spec cross-reference: Section 4.3 (Product metadata extraction).
