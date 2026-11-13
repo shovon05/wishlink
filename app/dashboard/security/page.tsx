@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import TotpSetup from '@/components/TotpSetup'
 import MaterialErrorBanner from '@/components/MaterialErrorBanner'
-import { KeyRound, Plus, Trash2, Loader2, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react'
+import { KeyRound, Plus, Trash2, Loader2, CheckCircle2, ShieldCheck, Sparkles, ExternalLink } from 'lucide-react'
 
 interface PasskeyRecord {
   id: string
@@ -152,6 +152,28 @@ export default function SecurityPage() {
           <p className="text-xs text-slate-muted mt-1 leading-relaxed">
             Sign in with Bitwarden, 1Password, Touch ID, Face ID, Windows Hello, or a hardware YubiKey without ever typing a password.
           </p>
+        </div>
+
+        {/* Informational Guidance Callout for RP ID Configuration */}
+        <div className="p-3.5 rounded-2xl bg-parchment-light/50 border border-parchment text-xs text-ink/80 flex items-start gap-2.5">
+          <span className="text-sm">🔑</span>
+          <div className="space-y-1">
+            <p className="font-semibold text-ink">
+              Bitwarden & Hardware Passkey Setup
+            </p>
+            <p className="text-[11px] text-slate-muted leading-relaxed">
+              When you click <strong>Add New Passkey</strong>, Bitwarden or your browser authenticator will ask to save your credentials. Passkeys require the Relying Party ID in your Supabase Auth settings to match your current site domain (<code className="bg-white px-1 py-0.5 rounded border border-parchment font-mono text-[10px] text-ink">wishlink-gamma.vercel.app</code>).
+            </p>
+            <a
+              href="https://supabase.com/dashboard/project/jpwoydvlqukbnlxeuqeh/auth/passkeys"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-mocha hover:text-ink underline pt-0.5"
+            >
+              <span>Open Supabase Passkeys Settings</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
         </div>
 
         <div>
