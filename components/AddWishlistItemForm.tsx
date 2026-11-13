@@ -47,11 +47,24 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
         setInfoNotice(data.message)
       }
 
+      // Check both image_url and image to prevent key-mismatch regression
+      const resolvedImage = data.image_url || data.image || ''
+      const rawPrice = data.displayPrice || data.price || ''
+
+      // Automatically infer currency if present in scraped price (e.g. "BDT 670")
+      let inferredCurrency = 'USD'
+      for (const curr of CURRENCIES) {
+        if (typeof rawPrice === 'string' && rawPrice.toUpperCase().includes(curr)) {
+          inferredCurrency = curr
+          break
+        }
+      }
+
       setPreview({
         title: data.title || '',
-        image: data.image || '',
-        price: data.displayPrice || data.price || '',
-        currency: data.currency || 'USD',
+        image: resolvedImage,
+        price: rawPrice,
+        currency: data.currency || inferredCurrency,
         category: 'All Gifts',
       })
     } catch {
@@ -161,7 +174,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
       setUrl('')
       setPreview(null)
       router.refresh()
-    } catch (err) {
+    } catch (err: unknown) {
       setFormError(err)
     } finally {
       setSaving(false)
@@ -172,7 +185,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h2 className="text-base font-serif font-bold text-ink">
+          <h2 className="text-base sm:text-lg font-serif font-bold text-ink">
             Add to Wishlist
           </h2>
           <p className="text-xs text-slate-muted">
@@ -341,25 +354,34 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-parchment">
+          <div className="flex items-center justify-end gap-2.5 pt-2">
             <button
+              type="button"
               onClick={() => {
                 setPreview(null)
                 setUrl('')
                 setFormError(null)
               }}
-              disabled={saving}
-              className="px-4 py-2.5 text-xs font-semibold text-slate-muted hover:text-ink transition-colors cursor-pointer min-h-[40px]"
+              className="px-4 py-2 text-xs font-semibold text-slate-muted hover:text-ink transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving || !preview.title.trim()}
-              className="posh-button-primary disabled:opacity-50 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs min-h-[40px]"
+              className="posh-button-primary disabled:opacity-50 px-5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
             >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              <span>{saving ? 'Adding to Registry...' : 'Add to Wishlist'}</span>
+              {saving ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Adding Item...</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Add to Wishlist</span>
+                </>
+              )}
             </button>
           </div>
         </div>

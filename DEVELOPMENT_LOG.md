@@ -251,3 +251,30 @@ All timestamps are recorded in `Asia/Dhaka` (+06:00) with ISO-8601 offset format
 - Side effects and follow-ups:
   - Commit and push to `origin/main` to trigger Vercel deployment.
 - Master spec cross-reference: Section 3.2, Section 4.7 (Authentication and account security).
+
+---
+
+## WL-LOG-0009 — Fix Scraped Product Image and Currency Extraction
+- Timestamp: 2026-11-13T12:37:00+06:00
+- Category: Bug fix
+- Phase: Phase 4 — Wishlist Item Completeness
+- Author: Antigravity Agent
+- Context: In `AddWishlistItemForm.tsx`, when inspecting a product link from an online store, the extracted product preview image was missing ("No image" placeholder shown).
+- Scope of work:
+  - `components/AddWishlistItemForm.tsx`
+- Pre-change state:
+  - `app/api/extract-metadata/route.ts` returned `{ image_url: ... }`, but `AddWishlistItemForm.tsx` was looking for `data.image`.
+  - Because `data.image` was undefined, `preview.image` defaulted to `''`, showing "No image" in the preview drawer and saving `image_url: null` to the database.
+- Changes made:
+  - In `components/AddWishlistItemForm.tsx`:
+    - Updated extraction mapping: `const resolvedImage = data.image_url || data.image || ''`.
+    - Added automatic currency detection to inspect scraped price strings (e.g., detecting `BDT` in `"BDT 670"` and automatically selecting `BDT` in the currency dropdown instead of defaulting to `USD`).
+- Verification:
+  - Tested `/api/extract-metadata` against live pharmacy and retail URLs (successfully resolved high-res product image and BDT price).
+  - `npm test`: 12/12 passed in 104ms.
+  - `npx tsc --noEmit`: 0 errors.
+  - `npm run lint`: 0 errors, 0 warnings.
+  - `npx next build --webpack`: 20/20 routes generated cleanly.
+- Side effects and follow-ups:
+  - Commit and push to `origin/main` to deploy to Vercel production.
+- Master spec cross-reference: Section 4.3 (Product metadata extraction), Section 4.2.
