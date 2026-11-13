@@ -69,7 +69,7 @@ export default function MaterialErrorBanner({
     if (errorInfo.isDatabaseError) {
       return <Database className="w-5 h-5 text-ribbon" />
     }
-    if (errorInfo.code?.includes('AUTH') || errorInfo.code === '42501') {
+    if (errorInfo.code?.includes('AUTH') || errorInfo.code === '42501' || errorInfo.code?.includes('WEBAUTHN')) {
       return <ShieldAlert className="w-5 h-5 text-ribbon" />
     }
     return <AlertCircle className="w-5 h-5 text-ribbon" />
@@ -175,11 +175,11 @@ export default function MaterialErrorBanner({
       {showDetails && (
         <div className="border-t border-ribbon/20 bg-white/90 p-3.5 sm:p-4 text-xs font-mono space-y-2">
           <div className="flex items-center justify-between text-[11px] text-slate-muted font-sans border-b border-parchment pb-1.5">
-            <span className="font-semibold">Technical Error Stack & Database Context</span>
+            <span className="font-semibold">Technical Error Stack & Diagnostics</span>
             <span>UTF-8 Diagnostics</span>
           </div>
 
-          <div className="space-y-1 text-[11px] leading-relaxed text-ink/80 overflow-x-auto max-h-48 p-2 rounded-lg bg-cotton/70 border border-parchment/60">
+          <div className="space-y-1 text-[11px] leading-relaxed text-ink/80 overflow-x-auto max-h-48 p-2.5 rounded-lg bg-cotton/70 border border-parchment/60 whitespace-pre-wrap">
             {errorInfo.code && <div><strong className="text-ribbon">code:</strong> {errorInfo.code}</div>}
             {errorInfo.hint && <div><strong className="text-caramel">hint:</strong> {errorInfo.hint}</div>}
             {errorInfo.details && <div><strong className="text-mocha">details:</strong> {errorInfo.details}</div>}

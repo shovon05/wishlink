@@ -189,3 +189,34 @@ All timestamps are recorded in `Asia/Dhaka` (+06:00) with ISO-8601 offset format
 - Side effects and follow-ups:
   - Commit and push to `main` for instant deployment to Vercel production.
 - Master spec cross-reference: Section 4.7 (Authentication and account security), Section 6 (M3 visual system), Section 10 (Security and privacy).
+
+---
+
+## WL-LOG-0007 — Unwrap WebAuthn Error Cause Property & Diagnostics
+- Timestamp: 2026-11-13T12:04:00+06:00
+- Category: Bug fix & Code change
+- Phase: Phase 3 — Identity & Account Security
+- Author: Antigravity Agent
+- Context: When clicking "Add New Passkey", the error banner displayed code `ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY` and message `a Non-Webauthn related error has occurred`. This code is Supabase/SimpleWebAuthn's wrapper signal instructing callers to inspect `error.cause` for the browser's DOMException.
+- Scope of work:
+  - `lib/error-utils.ts`
+  - `components/MaterialErrorBanner.tsx`
+- Pre-change state:
+  - `parseAppError` inspected top-level `err.message` and `err.code`, missing the nested `err.cause` (or `err.originalError`).
+  - `ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY` was displayed directly in the UI instead of the underlying browser DOMException.
+- Changes made:
+  - In `lib/error-utils.ts`:
+    - Added recursive unwrapping of `err.cause` and `err.originalError`.
+    - When `err.code === 'ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY'` or message is `Non-Webauthn related error`, replaced the generic message and code with `cause.message` and `cause.name`.
+    - Enhanced error classification to handle RP ID domain configuration mismatches (`WEBAUTHN_DOMAIN_MISMATCH`), authenticator operation errors (`WEBAUTHN_OPERATION_ERROR`), and user dismissals.
+    - Added multiline diagnostic details showing the root cause.
+  - In `components/MaterialErrorBanner.tsx`:
+    - Enabled `whitespace-pre-wrap` in the diagnostic drawer for multiline stack and cause inspection.
+- Verification:
+  - `npm test`: 12/12 passed in 104ms.
+  - `npx tsc --noEmit`: 0 errors.
+  - `npm run lint`: 0 errors, 0 warnings.
+  - `npx next build --webpack`: 20/20 routes compiled cleanly.
+- Side effects and follow-ups:
+  - Commit and push to `origin/main` for live Vercel deployment.
+- Master spec cross-reference: Section 4.7 (Authentication and account security), Section 10.3 (Web and API safety).

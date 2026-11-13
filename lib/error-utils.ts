@@ -24,10 +24,40 @@ export function parseAppError(error: unknown, fallbackMessage = 'An unexpected i
 
   if (typeof error === 'object' && error !== null) {
     const err = error as Record<string, unknown>
-    const code = (err.code || err.statusCode || err.status || undefined) as string | number | undefined
-    const rawMessage = (err.message || err.error_description || (typeof err.toString === 'function' ? err.toString() : '')) as string
+
+    // 0. Unwrap underlying cause (e.g. WebAuthnError with ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY or Error.cause)
+    const causeObj = (err.cause || err.originalError) as Record<string, unknown> | Error | string | undefined
+    let causeName = ''
+    let causeMsg = ''
+    if (causeObj && typeof causeObj === 'object') {
+      const c = causeObj as Record<string, unknown>
+      causeName = String(c.name || '')
+      causeMsg = String(c.message || '')
+    } else if (typeof causeObj === 'string') {
+      causeMsg = causeObj
+    }
+
+    const isPassthroughCode =
+      err.code === 'ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY' ||
+      String(err.message || '').includes('Non-Webauthn related error')
+
+    const rawMessage = (
+      isPassthroughCode && causeMsg
+        ? causeMsg
+        : (err.message || err.error_description || causeMsg || (typeof err.toString === 'function' ? err.toString() : ''))
+    ) as string
+
+    const code = (
+      isPassthroughCode && causeName
+        ? causeName
+        : (err.code || err.statusCode || err.status || undefined)
+    ) as string | number | undefined
+
     const hint = (err.hint as string | undefined) || undefined
-    const details = (err.details as string | undefined) || undefined
+    const baseDetails = (err.details as string | undefined) || undefined
+    const details = causeMsg && causeMsg !== rawMessage
+      ? `Underlying Cause (${causeName || 'Error'}): ${causeMsg}${baseDetails ? `\nDetails: ${baseDetails}` : ''}`
+      : (baseDetails || (isPassthroughCode ? `Underlying Cause: ${causeName || 'Unknown'} - ${causeMsg || 'No cause message available'}` : rawMessage))
 
     const lowerMsg = rawMessage.toLowerCase()
 
@@ -150,64 +180,98 @@ export function parseAppError(error: unknown, fallbackMessage = 'An unexpected i
     }
 
     // 9. Biometric Passkey / WebAuthn Errors
+    const combinedMsg = `${lowerMsg} ${causeMsg.toLowerCase()} ${causeName.toLowerCase()}`
+
     if (
-      lowerMsg.includes('passkey') ||
-      lowerMsg.includes('webauthn') ||
-      lowerMsg.includes('notallowederror') ||
-      lowerMsg.includes('publickeycredential') ||
-      lowerMsg.includes('authenticator')
+      combinedMsg.includes('passkey') ||
+      combinedMsg.includes('webauthn') ||
+      combinedMsg.includes('notallowederror') ||
+      combinedMsg.includes('securityerror') ||
+      combinedMsg.includes('operationerror') ||
+      combinedMsg.includes('publickeycredential') ||
+      combinedMsg.includes('authenticator') ||
+      combinedMsg.includes('error_passthrough') ||
+      isPassthroughCode
     ) {
+      // (a) User cancelled / dismissed / timed out
       if (
-        lowerMsg.includes('cancel') ||
-        lowerMsg.includes('notallowederror') ||
-        lowerMsg.includes('abort') ||
-        lowerMsg.includes('timed out')
+        combinedMsg.includes('cancel') ||
+        combinedMsg.includes('notallowederror') ||
+        combinedMsg.includes('abort') ||
+        combinedMsg.includes('timed out') ||
+        combinedMsg.includes('denied')
       ) {
         return {
-          title: 'Passkey Verification Dismissed',
-          message: 'The biometric prompt (Touch ID, Face ID, Windows Hello, or Security Key) was cancelled or timed out.',
+          title: 'Passkey Prompt Dismissed',
+          message: causeMsg || 'The biometric prompt (Touch ID, Face ID, Windows Hello, or Security Key) was cancelled or timed out before completion.',
           code: 'WEBAUTHN_CANCELLED',
-          details: rawMessage,
+          details: details || rawMessage,
           isDatabaseError: false,
           suggestion: 'Click "Add New Passkey" again and touch the sensor or scan Face ID when prompted.',
         }
       }
 
+      // (b) Relying Party / Domain Mismatch
       if (
-        lowerMsg.includes('not supported') ||
-        lowerMsg.includes('disabled') ||
-        lowerMsg.includes('unsupported') ||
-        lowerMsg.includes('404')
+        combinedMsg.includes('rp id') ||
+        combinedMsg.includes('securityerror') ||
+        combinedMsg.includes('origin') ||
+        combinedMsg.includes('domain') ||
+        combinedMsg.includes('insecure')
+      ) {
+        return {
+          title: 'Passkey Domain Configuration Required',
+          message: causeMsg || 'The WebAuthn Relying Party (RP ID) does not match this website domain.',
+          code: 'WEBAUTHN_DOMAIN_MISMATCH',
+          details: details || rawMessage,
+          hint: 'WebAuthn requires the Supabase Auth Site URL to match your website domain (e.g. https://wishlink-gamma.vercel.app).',
+          isDatabaseError: false,
+          suggestion: 'In your Supabase Dashboard, go to Authentication > URL Configuration and verify Site URL is set to https://wishlink-gamma.vercel.app.',
+        }
+      }
+
+      // (c) Operation / Authenticator general error
+      if (
+        combinedMsg.includes('operationerror') ||
+        combinedMsg.includes('operation failed') ||
+        combinedMsg.includes('user verification')
+      ) {
+        return {
+          title: 'Biometric Authenticator Notice',
+          message: causeMsg || 'Your browser or device authenticator could not verify user presence.',
+          code: 'WEBAUTHN_OPERATION_ERROR',
+          details: details || rawMessage,
+          isDatabaseError: false,
+          suggestion: 'Make sure your finger is placed cleanly on Touch ID, or check that Brave / browser permissions allow WebAuthn.',
+        }
+      }
+
+      // (d) Server not configured or disabled
+      if (
+        combinedMsg.includes('not supported') ||
+        combinedMsg.includes('disabled') ||
+        combinedMsg.includes('unsupported') ||
+        combinedMsg.includes('404')
       ) {
         return {
           title: 'Passkeys Configuration Required',
-          message: 'Passkey / WebAuthn authentication requires activation in your Supabase project configuration.',
+          message: causeMsg || 'Passkey / WebAuthn authentication requires activation in your Supabase project configuration.',
           code: 'WEBAUTHN_UNCONFIGURED',
           hint: 'Go to Supabase Dashboard > Authentication > Security / Providers to enable Passkeys / WebAuthn.',
-          details: rawMessage,
+          details: details || rawMessage,
           isDatabaseError: false,
           suggestion: 'Enable Passkeys in Supabase Auth settings, or use the Authenticator App (TOTP) below which is active right now.',
         }
       }
 
-      if (lowerMsg.includes('rp id') || lowerMsg.includes('securityerror') || lowerMsg.includes('origin')) {
-        return {
-          title: 'Passkey Domain Boundary',
-          message: 'WebAuthn passkeys must be registered from the exact site domain matching your relying party configuration.',
-          code: 'WEBAUTHN_DOMAIN_MISMATCH',
-          details: rawMessage,
-          isDatabaseError: false,
-          suggestion: 'Verify you are accessing the site via HTTPS on your production or preview domain.',
-        }
-      }
-
+      // Fallback for any other WebAuthn issue
       return {
-        title: 'Passkey Security Notice',
-        message: rawMessage || 'Could not complete passkey enrollment.',
-        code: code ? String(code) : 'WEBAUTHN_NOTICE',
-        details: rawMessage,
+        title: 'Passkey Verification Notice',
+        message: causeMsg || rawMessage || 'Could not complete passkey enrollment.',
+        code: String(code || causeName || 'WEBAUTHN_NOTICE'),
+        details: details || rawMessage,
         isDatabaseError: false,
-        suggestion: 'Ensure biometric sensors are active on your device, or use Authenticator App 2FA below.',
+        suggestion: 'If using Brave, check that Brave Shields allows WebAuthn, or use the Authenticator App (TOTP) below.',
       }
     }
 
