@@ -310,3 +310,38 @@ All timestamps are recorded in `Asia/Dhaka` (+06:00) with ISO-8601 offset format
 - Side effects and follow-ups:
   - Commit and push to `origin/main` for live Vercel deployment.
 - Master spec cross-reference: Section 4.3 (Product metadata extraction).
+
+---
+
+## WL-LOG-0011 — Profile Avatar Synchronization & Next.js Image Rendering Fix
+- Timestamp: 2026-11-13T13:04:00+06:00
+- Category: Bug fix & Polish
+- Phase: Phase 2 — Identity & Privacy
+- Author: Antigravity Agent
+- Context: User reported missing user profile avatar on the public registry page (`/[username]`), where an empty box displayed the fallback text "IA Shovon".
+- Scope of work:
+  - `app/[username]/page.tsx`
+  - `app/auth/callback/route.ts`
+  - `next.config.ts`
+  - `public.profiles` Supabase database record
+- Root cause:
+  1. Profile table had `avatar_url: NULL` because the Supabase initial signup hook didn't extract Google's `picture` claim from user metadata.
+  2. In Next.js Image Optimization on Vercel, requests to `/_next/image` were served with `content-disposition: attachment`, causing privacy-focused browsers like Brave to reject inline rendering inside `<img>` tags.
+  3. External avatar image URLs like `lh3.googleusercontent.com` were subject to cross-origin referrer restrictions if `referrerPolicy="no-referrer"` was not explicitly set.
+- Changes made:
+  - In `app/[username]/page.tsx`:
+    - Added `unoptimized` and `referrerPolicy="no-referrer"` to the profile avatar `<Image>` element to directly stream avatars from Google's high-speed CDN without intermediate proxy manipulation or header interference.
+  - In `next.config.ts`:
+    - Added `images: { contentDispositionType: 'inline' }` to explicitly enforce inline rendering for all optimized asset pipelines.
+  - In `app/auth/callback/route.ts`:
+    - Added OAuth metadata synchronization hook that extracts `avatar_url` or `picture` from OAuth sessions and safely persists them to `public.profiles`.
+  - In Supabase Database:
+    - Populated `avatar_url` for user `shovon` with the Google OAuth user image (`https://lh3.googleusercontent.com/a/...`).
+- Verification:
+  - `npm test`: 12/12 passed in 114ms.
+  - `npx tsc --noEmit`: 0 errors.
+  - `npm run lint`: 0 errors, 0 warnings.
+  - `npm run build`: 20/20 routes generated successfully.
+- Side effects and follow-ups:
+  - Push changes to GitHub repository for Vercel deployment.
+- Master spec cross-reference: Section 2.1 (Profile and Identity), Section 5.1 (Visual Aesthetics).

@@ -1,11 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
-import Link from 'next/link'
 import Image from 'next/image'
 import ShareProfileButton from '@/components/ShareProfileButton'
 import { cache } from 'react'
-import { ShieldCheck, Gift, CheckCircle2, PackageOpen, Sparkles } from 'lucide-react'
+import { ShieldCheck, Gift, CheckCircle2, PackageOpen, Sparkles, User } from 'lucide-react'
 
 type Props = {
   params: Promise<{ username: string }>
@@ -64,7 +63,7 @@ export default async function PublicProfilePage({ params }: Props) {
     .order('sort_order', { ascending: true })
 
   const petName = profile.pet_name || profile.username
-  const avatarUrl = profile.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${profile.username}`
+  const avatarUrl = profile.avatar_url
   const availableCount = items?.filter((i) => i.status === 'available').length || 0
 
   return (
@@ -73,15 +72,22 @@ export default async function PublicProfilePage({ params }: Props) {
 
         {/* Profile Registry Header */}
         <header className="paper-tag rounded-3xl p-6 sm:p-8 mb-8 text-center sm:text-left flex flex-col sm:flex-row items-center sm:items-start gap-6 relative overflow-hidden bg-white border border-parchment md-elevation-1">
-          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-parchment-light border border-parchment shrink-0 shadow-xs">
-            <Image
-              src={avatarUrl}
-              alt={petName}
-              width={112}
-              height={112}
-              className="w-full h-full object-cover"
-              unoptimized={avatarUrl.endsWith('.svg')}
-            />
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-parchment-light border border-parchment shrink-0 shadow-xs flex items-center justify-center">
+            {avatarUrl ? (
+              <Image
+                src={avatarUrl}
+                alt={petName}
+                width={112}
+                height={112}
+                className="w-full h-full object-cover"
+                unoptimized
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-parchment-light to-parchment text-mocha/60">
+                <User className="w-10 h-10 stroke-[1.8]" />
+              </div>
+            )}
           </div>
 
           <div className="flex-1 space-y-2">
@@ -98,141 +104,136 @@ export default async function PublicProfilePage({ params }: Props) {
               </div>
             </div>
 
-            <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2.5 text-xs text-slate-muted">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-parchment-light border border-parchment text-ink font-semibold">
-                <Gift className="w-3.5 h-3.5 text-ribbon" />
-                {availableCount} {availableCount === 1 ? 'wish available' : 'wishes available'}
+            <div className="flex items-center justify-center sm:justify-start gap-3 pt-1 text-xs text-slate-muted flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-parchment-light/80 text-mocha font-semibold border border-parchment">
+                <Gift className="w-3.5 h-3.5 text-caramel stroke-[2]" />
+                <span>{availableCount} {availableCount === 1 ? 'wish' : 'wishes'} available</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-spruce-light border border-spruce/30 text-spruce font-semibold">
-                <ShieldCheck className="w-3.5 h-3.5 text-spruce" />
-                Zero-leak delivery address privacy
+
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-spruce-light text-spruce font-semibold border border-spruce/20">
+                <ShieldCheck className="w-3.5 h-3.5 stroke-[2]" />
+                <span>Zero-leak delivery address privacy</span>
               </span>
             </div>
           </div>
         </header>
 
-        {/* Registry Items Grid */}
-        <section aria-labelledby="registry-heading">
-          <div className="flex items-center justify-between mb-5 px-1">
-            <div className="flex items-center gap-2">
-              <h2 id="registry-heading" className="text-lg font-serif font-bold text-ink">
-                Wishlist Catalog
-              </h2>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-caramel-light text-caramel border border-caramel/30">
-                <Sparkles className="w-3 h-3 text-caramel" />
-                <span>Curated</span>
+        {/* Wishlist Items Section */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg sm:text-xl font-serif font-bold text-ink flex items-center gap-2">
+              <span>Wishlist Catalog</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-sans font-semibold bg-parchment-light text-mocha border border-parchment">
+                <Sparkles className="w-3 h-3 inline mr-1 text-caramel" />
+                Curated
               </span>
-            </div>
-            <span className="text-xs text-slate-muted font-medium">
-              {items?.length || 0} {items?.length === 1 ? 'total item' : 'total items'}
+            </h2>
+            <span className="text-xs text-slate-muted font-mono">
+              {items?.length || 0} total {items?.length === 1 ? 'item' : 'items'}
             </span>
           </div>
 
-          {items && items.length > 0 ? (
+          {!items || items.length === 0 ? (
+            <div className="paper-tag rounded-3xl p-12 text-center bg-white border border-parchment md-elevation-1 space-y-3">
+              <PackageOpen className="w-12 h-12 mx-auto text-caramel/60 stroke-[1.5]" />
+              <h3 className="text-base font-serif font-bold text-ink">
+                No wishes published yet
+              </h3>
+              <p className="text-xs text-slate-muted max-w-sm mx-auto leading-relaxed">
+                {petName} hasn&apos;t added any gifts to this registry yet. Check back soon!
+              </p>
+            </div>
+          ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {items.map((item) => {
-                const isAvailable = item.status === 'available'
-
+                const isReserved = item.status === 'reserved'
                 return (
-                  <article
+                  <div
                     key={item.id}
-                    className="paper-tag rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-150 hover:border-caramel/40 md-elevation-1 hover:md-elevation-2 bg-white border border-parchment"
+                    className={`paper-tag rounded-3xl overflow-hidden flex flex-col bg-white border border-parchment md-elevation-1 transition-all ${
+                      isReserved
+                        ? 'opacity-70 grayscale-[30%] border-dashed'
+                        : 'hover:border-caramel/40 hover:md-elevation-2'
+                    }`}
                   >
-                    <div>
-                      {/* Product Image */}
-                      <div className="aspect-square bg-parchment-light relative overflow-hidden border-b border-parchment">
-                        {item.image_url ? (
-                          <Image
-                            src={item.image_url}
-                            alt={item.title || 'Product'}
-                            fill
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                            className="object-cover transition-transform duration-300 hover:scale-102"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-muted gap-2">
-                            <PackageOpen className="w-8 h-8 stroke-1 text-slate-muted/60" />
-                            <span className="text-xs">No image provided</span>
-                          </div>
-                        )}
+                    {/* Item Image */}
+                    <div className="relative aspect-square w-full bg-parchment-light overflow-hidden">
+                      {item.image_url ? (
+                        <Image
+                          src={item.image_url}
+                          alt={item.title || 'Gift item'}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover transition-transform duration-500 hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-muted gap-2 text-xs">
+                          <PackageOpen className="w-10 h-10 text-caramel/40 stroke-[1.2]" />
+                          <span>No product photo</span>
+                        </div>
+                      )}
 
+                      {/* Status Badges */}
+                      <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
                         {item.category && (
-                          <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-ink border border-parchment shadow-2xs">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/95 text-ink shadow-xs backdrop-blur-xs border border-parchment/60">
                             {item.category}
-                          </div>
+                          </span>
                         )}
-
-                        {!isAvailable && (
-                          <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-spruce border border-spruce/30 shadow-2xs flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-spruce" />
-                            Reserved
-                          </div>
+                        {isReserved && (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-mocha text-cotton shadow-xs flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Claimed</span>
+                          </span>
                         )}
                       </div>
+                    </div>
 
-                      {/* Item Details */}
-                      <div className="p-4 sm:p-5">
-                        <h3 className="font-serif font-bold text-base text-ink line-clamp-2 leading-snug mb-1">
-                          {item.title || 'Untitled Wishlist Item'}
+                    {/* Item Body */}
+                    <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                      <div className="space-y-1.5">
+                        <h3 className="font-serif font-bold text-sm text-ink line-clamp-2 leading-snug">
+                          {item.title}
                         </h3>
-                        {item.price_amount ? (
-                          <p className="text-sm font-semibold text-slate-muted tabular-nums">
-                            {item.price_currency === 'USD' || !item.price_currency ? '$' : `${item.price_currency} `}
-                            {Number(item.price_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                        ) : item.price ? (
-                          <p className="text-sm font-medium text-slate-muted tabular-nums">
+
+                        {item.price ? (
+                          <p className="text-xs font-mono font-semibold text-caramel">
                             {item.price}
                           </p>
                         ) : (
-                          <p className="text-xs text-slate-muted/70 italic">Price not listed</p>
+                          <p className="text-[11px] text-slate-muted italic">
+                            Price not listed
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Gifter Action */}
+                      <div>
+                        {isReserved ? (
+                          <button
+                            disabled
+                            type="button"
+                            className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-parchment-light text-slate-muted cursor-not-allowed text-center"
+                          >
+                            Claimed by another gifter
+                          </button>
+                        ) : (
+                          <a
+                            href={`/${profile.username}/gift/${item.id}`}
+                            className="posh-button-primary w-full py-2.5 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer text-center block"
+                          >
+                            <Gift className="w-3.5 h-3.5 text-blush" />
+                            <span>Reserve Gift</span>
+                          </a>
                         )}
                       </div>
                     </div>
-
-                    {/* Action Area */}
-                    <div className="p-4 sm:p-5 pt-0">
-                      {isAvailable ? (
-                        <Link
-                          href={`/${profile.username}/gift/${item.id}`}
-                          className="w-full posh-button-rose flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold cursor-pointer min-h-[44px]"
-                        >
-                          <Gift className="w-4 h-4 stroke-[2.2]" />
-                          <span>Reserve gift</span>
-                        </Link>
-                      ) : (
-                        <div className="w-full text-center py-2.5 px-4 rounded-xl text-xs font-semibold bg-spruce-light text-spruce border border-spruce/30 flex items-center justify-center gap-1.5 min-h-[44px]">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>A gifter has reserved this</span>
-                        </div>
-                      )}
-                    </div>
-                  </article>
+                  </div>
                 )
               })}
             </div>
-          ) : (
-            <div className="paper-tag rounded-3xl p-12 text-center max-w-md mx-auto my-8 space-y-3 bg-white border border-parchment md-elevation-1">
-              <PackageOpen className="w-10 h-10 text-caramel mx-auto stroke-1" />
-              <h3 className="text-lg font-serif font-bold text-ink">No items listed yet</h3>
-              <p className="text-sm text-slate-muted">
-                {petName} hasn&apos;t added any items to this registry yet. Check back soon!
-              </p>
-            </div>
           )}
-        </section>
-
-        {/* Footer */}
-        <footer className="mt-16 text-center text-xs text-slate-muted flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 border-t border-parchment pt-8">
-          <span className="font-serif font-bold text-ink">Wishlink Registry</span>
-          <span className="hidden sm:inline text-parchment">·</span>
-          <span>Privacy-first gift coordination</span>
-          <span className="hidden sm:inline text-parchment">·</span>
-          <Link href="/" className="text-caramel hover:text-mocha font-medium hover:underline py-1">
-            Create your own wishlist
-          </Link>
-        </footer>
-
+        </div>
       </div>
     </main>
   )
