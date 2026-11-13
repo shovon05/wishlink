@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Bell, MapPin, CheckCircle2, PackageOpen, Gift, EyeOff } from 'lucide-react'
+import MaterialErrorBanner from '@/components/MaterialErrorBanner'
 
 interface AddressItem {
   id: string
@@ -41,6 +42,7 @@ export default function NotificationsPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [surpriseMode, setSurpriseMode] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [actionError, setActionError] = useState<unknown | null>(null)
 
   // Modal states
   const [shareModalResId, setShareModalResId] = useState<string | null>(null)
@@ -50,51 +52,63 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     const initData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      setUserId(user.id)
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        if (authError || !user) return
+        setUserId(user.id)
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('surprise_mode')
-        .eq('id', user.id)
-        .maybeSingle()
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('surprise_mode')
+          .eq('id', user.id)
+          .maybeSingle()
 
-      if (profile) {
-        setSurpriseMode(Boolean(profile.surprise_mode))
-      }
+        if (profile) {
+          setSurpriseMode(Boolean(profile.surprise_mode))
+        }
 
-      const { data: addrs } = await supabase
-        .from('addresses')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('priority', { ascending: true })
+        const { data: addrs, error: addrError } = await supabase
+          .from('addresses')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('priority', { ascending: true })
 
-      if (addrs) {
-        setAddresses(addrs)
-        if (addrs.length > 0) setSelectedAddressId(addrs[0].id)
-      }
+        if (addrError) {
+          setActionError(addrError)
+        } else if (addrs) {
+          setAddresses(addrs)
+          if (addrs.length > 0) setSelectedAddressId(addrs[0].id)
+        }
 
-      const { data: notifs } = await supabase
-        .from('notifications')
-        .select(`
-          *,
-          gift_reservations (
+        const { data: notifs, error: notifError } = await supabase
+          .from('notifications')
+          .select(`
             *,
-            wishlist_items (*)
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+            gift_reservations (
+              *,
+              wishlist_items (*)
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
 
-      if (notifs) setNotifications(notifs as unknown as NotificationRecord[])
-      setLoading(false)
+        if (notifError) {
+          setActionError(notifError)
+        } else if (notifs) {
+          setNotifications(notifs as unknown as NotificationRecord[])
+        }
 
-      await supabase
-        .from('notifications')
-        .update({ read_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-        .is('read_at', null)
+        setLoading(false)
+
+        await supabase
+          .from('notifications')
+          .update({ read_at: new Date().toISOString() })
+          .eq('user_id', user.id)
+          .is('read_at', null)
+      } catch (err) {
+        setActionError(err)
+        setLoading(false)
+      }
     }
 
     initData()
@@ -135,24 +149,35 @@ export default function NotificationsPage() {
 
   const handleShareAddress = async () => {
     if (!shareModalResId || !selectedAddressId) return
-    await supabase
-      .from('gift_reservations')
-      .update({ shared_address_id: selectedAddressId })
-      .eq('id', shareModalResId)
+    setActionError(null)
 
-    setNotifications((prev) =>
-      prev.map((n) =>
-        n.reservation_id === shareModalResId
-          ? {
-              ...n,
-              gift_reservations: n.gift_reservations
-                ? { ...n.gift_reservations, shared_address_id: selectedAddressId }
-                : undefined,
-            }
-          : n
+    try {
+      const { error: updateError } = await supabase
+        .from('gift_reservations')
+        .update({ shared_address_id: selectedAddressId })
+        .eq('id', shareModalResId)
+
+      if (updateError) {
+        setActionError(updateError)
+        return
+      }
+
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.reservation_id === shareModalResId
+            ? {
+                ...n,
+                gift_reservations: n.gift_reservations
+                  ? { ...n.gift_reservations, shared_address_id: selectedAddressId }
+                  : undefined,
+              }
+            : n
+        )
       )
-    )
-    setShareModalResId(null)
+      setShareModalResId(null)
+    } catch (err) {
+      setActionError(err)
+    }
   }
 
   const handleRpcAction = async (
@@ -161,19 +186,29 @@ export default function NotificationsPage() {
     newStatus: string
   ) => {
     if (confirm(`Are you sure you want to mark this gift as ${newStatus === 'completed' ? 'completed' : 'cancelled'}?`)) {
-      await supabase.rpc(rpcName, { p_reservation_id: reservationId })
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.reservation_id === reservationId
-            ? {
-                ...n,
-                gift_reservations: n.gift_reservations
-                  ? { ...n.gift_reservations, status: newStatus }
-                  : undefined,
-              }
-            : n
+      setActionError(null)
+      try {
+        const { error: rpcError } = await supabase.rpc(rpcName, { p_reservation_id: reservationId })
+        if (rpcError) {
+          setActionError(rpcError)
+          return
+        }
+
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.reservation_id === reservationId
+              ? {
+                  ...n,
+                  gift_reservations: n.gift_reservations
+                    ? { ...n.gift_reservations, status: newStatus }
+                    : undefined,
+                }
+              : n
+          )
         )
-      )
+      } catch (err) {
+        setActionError(err)
+      }
     }
   }
 
@@ -188,12 +223,20 @@ export default function NotificationsPage() {
         </p>
       </div>
 
+      {Boolean(actionError) && (
+        <MaterialErrorBanner
+          error={actionError}
+          onDismiss={() => setActionError(null)}
+          fallbackMessage="Unable to process gifting request on the database."
+        />
+      )}
+
       {loading ? (
-        <div className="paper-tag rounded-3xl p-12 text-center text-slate-muted text-xs bg-white border border-parchment">
+        <div className="paper-tag rounded-3xl p-12 text-center text-slate-muted text-xs bg-white border border-parchment md-elevation-1">
           Loading requests...
         </div>
       ) : notifications.length === 0 ? (
-        <div className="paper-tag rounded-3xl p-12 text-center space-y-3 bg-white border border-parchment">
+        <div className="paper-tag rounded-3xl p-12 text-center space-y-3 bg-white border border-parchment md-elevation-1">
           <div className="w-12 h-12 rounded-2xl bg-parchment-light border border-parchment flex items-center justify-center mx-auto text-caramel">
             <Bell className="w-6 h-6 stroke-1" />
           </div>
@@ -212,7 +255,7 @@ export default function NotificationsPage() {
             return (
               <div
                 key={n.id}
-                className={`paper-tag rounded-2xl p-4 sm:p-5 transition-all bg-white border border-parchment ${
+                className={`paper-tag rounded-2xl p-4 sm:p-5 transition-all bg-white border border-parchment md-elevation-1 ${
                   isUnread ? 'ring-1 ring-caramel/50 bg-parchment-light/20' : ''
                 }`}
               >
@@ -274,14 +317,14 @@ export default function NotificationsPage() {
                           <button
                             onClick={() => setShareModalResId(res.id)}
                             type="button"
-                            className="posh-button-primary inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer shadow-xs"
+                            className="posh-button-primary inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer shadow-xs min-h-[40px]"
                           >
                             <MapPin className="w-3.5 h-3.5 text-blush" />
                             <span>Share delivery address</span>
                           </button>
                         ) : (
                           <div className="flex flex-wrap items-center gap-3">
-                            <span className="text-spruce text-xs font-semibold inline-flex items-center gap-1.5 bg-spruce-light px-3 py-1 rounded-full border border-spruce/30">
+                            <span className="text-spruce text-xs font-semibold inline-flex items-center gap-1.5 bg-spruce-light px-3 py-1.5 rounded-full border border-spruce/30">
                               <CheckCircle2 className="w-3.5 h-3.5" />
                               <span>Address shared</span>
                             </span>
@@ -289,14 +332,14 @@ export default function NotificationsPage() {
                               <button
                                 onClick={() => handleRpcAction('complete_gift_reservation', res.id, 'completed')}
                                 type="button"
-                                className="px-3 py-1 rounded-xl text-xs font-semibold bg-white border border-parchment text-ink hover:bg-parchment-light transition-colors cursor-pointer"
+                                className="px-3 py-2 rounded-xl text-xs font-semibold bg-white border border-parchment text-ink hover:bg-parchment-light transition-colors cursor-pointer min-h-[36px]"
                               >
                                 Mark completed
                               </button>
                               <button
                                 onClick={() => handleRpcAction('cancel_gift_reservation', res.id, 'cancelled')}
                                 type="button"
-                                className="px-2.5 py-1 rounded-xl text-xs font-medium text-slate-muted hover:text-ribbon transition-colors cursor-pointer"
+                                className="px-2.5 py-2 rounded-xl text-xs font-medium text-slate-muted hover:text-ribbon transition-colors cursor-pointer min-h-[36px]"
                               >
                                 Cancel
                               </button>
@@ -307,13 +350,13 @@ export default function NotificationsPage() {
                     )}
 
                     {res?.status === 'completed' && (
-                      <span className="inline-block mt-3 text-xs font-semibold text-mocha bg-parchment-light px-3 py-0.5 rounded-full border border-parchment">
+                      <span className="inline-block mt-3 text-xs font-semibold text-mocha bg-parchment-light px-3 py-1 rounded-full border border-parchment">
                         Gift Fulfilled
                       </span>
                     )}
 
                     {res?.status === 'cancelled' && (
-                      <span className="inline-block mt-3 text-xs font-medium text-ribbon bg-ribbon-light px-3 py-0.5 rounded-full border border-ribbon/30">
+                      <span className="inline-block mt-3 text-xs font-medium text-ribbon bg-ribbon-light px-3 py-1 rounded-full border border-ribbon/30">
                         Reservation Cancelled
                       </span>
                     )}
@@ -328,7 +371,7 @@ export default function NotificationsPage() {
       {/* Share Address Modal */}
       {shareModalResId && (
         <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="paper-tag rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4 bg-white border border-parchment">
+          <div className="paper-tag rounded-3xl p-6 sm:p-7 max-w-md w-full md-elevation-4 space-y-4 bg-white border border-parchment">
             <div>
               <h3 className="text-lg font-serif font-bold text-ink">
                 Share Delivery Address
@@ -343,7 +386,7 @@ export default function NotificationsPage() {
                 <p>You don&apos;t have any shipping addresses saved yet.</p>
                 <Link
                   href="/dashboard/addresses"
-                  className="font-semibold underline inline-block"
+                  className="font-semibold underline inline-block py-1"
                 >
                   Add a delivery address first
                 </Link>
@@ -356,7 +399,7 @@ export default function NotificationsPage() {
                 <select
                   value={selectedAddressId}
                   onChange={(e) => setSelectedAddressId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-parchment rounded-xl text-sm bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer"
+                  className="w-full px-3.5 py-2.5 border border-parchment rounded-xl text-sm bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer min-h-[44px]"
                 >
                   {addresses.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -371,7 +414,7 @@ export default function NotificationsPage() {
               <button
                 onClick={() => setShareModalResId(null)}
                 type="button"
-                className="px-4 py-2 text-xs font-semibold text-slate-muted hover:text-ink transition-colors cursor-pointer"
+                className="px-4 py-2.5 text-xs font-semibold text-slate-muted hover:text-ink transition-colors cursor-pointer min-h-[40px]"
               >
                 Cancel
               </button>
@@ -379,7 +422,7 @@ export default function NotificationsPage() {
                 onClick={handleShareAddress}
                 disabled={addresses.length === 0}
                 type="button"
-                className="posh-button-primary disabled:opacity-50 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer"
+                className="posh-button-primary disabled:opacity-50 px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer min-h-[40px]"
               >
                 Confirm & Disclose Address
               </button>

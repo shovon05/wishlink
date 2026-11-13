@@ -69,10 +69,10 @@ export default async function PublicProfilePage({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-cotton pb-20 selection:bg-blush/50 selection:text-ink">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-8 sm:pt-16">
 
         {/* Profile Registry Header */}
-        <header className="paper-tag rounded-3xl p-6 sm:p-8 mb-8 text-center sm:text-left flex flex-col sm:flex-row items-center sm:items-start gap-6 relative overflow-hidden bg-white border border-parchment shadow-xs">
+        <header className="paper-tag rounded-3xl p-6 sm:p-8 mb-8 text-center sm:text-left flex flex-col sm:flex-row items-center sm:items-start gap-6 relative overflow-hidden bg-white border border-parchment md-elevation-1">
           <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-parchment-light border border-parchment shrink-0 shadow-xs">
             <Image
               src={avatarUrl}
@@ -99,11 +99,11 @@ export default async function PublicProfilePage({ params }: Props) {
             </div>
 
             <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2.5 text-xs text-slate-muted">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-parchment-light border border-parchment text-ink font-semibold">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-parchment-light border border-parchment text-ink font-semibold">
                 <Gift className="w-3.5 h-3.5 text-ribbon" />
                 {availableCount} {availableCount === 1 ? 'wish available' : 'wishes available'}
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-spruce-light border border-spruce/30 text-spruce font-semibold">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-spruce-light border border-spruce/30 text-spruce font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5 text-spruce" />
                 Zero-leak delivery address privacy
               </span>
@@ -123,7 +123,7 @@ export default async function PublicProfilePage({ params }: Props) {
                 <span>Curated</span>
               </span>
             </div>
-            <span className="text-xs text-slate-muted">
+            <span className="text-xs text-slate-muted font-medium">
               {items?.length || 0} {items?.length === 1 ? 'total item' : 'total items'}
             </span>
           </div>
@@ -136,7 +136,7 @@ export default async function PublicProfilePage({ params }: Props) {
                 return (
                   <article
                     key={item.id}
-                    className="paper-tag rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-150 hover:border-caramel/40 hover:shadow-md bg-white border border-parchment"
+                    className="paper-tag rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-150 hover:border-caramel/40 md-elevation-1 hover:md-elevation-2 bg-white border border-parchment"
                   >
                     <div>
                       {/* Product Image */}
@@ -195,13 +195,13 @@ export default async function PublicProfilePage({ params }: Props) {
                       {isAvailable ? (
                         <Link
                           href={`/${profile.username}/gift/${item.id}`}
-                          className="w-full posh-button-rose flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold cursor-pointer"
+                          className="w-full posh-button-rose flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold cursor-pointer min-h-[44px]"
                         >
                           <Gift className="w-4 h-4 stroke-[2.2]" />
                           <span>Reserve gift</span>
                         </Link>
                       ) : (
-                        <div className="w-full text-center py-2.5 px-4 rounded-xl text-xs font-semibold bg-spruce-light text-spruce border border-spruce/30 flex items-center justify-center gap-1.5">
+                        <div className="w-full text-center py-2.5 px-4 rounded-xl text-xs font-semibold bg-spruce-light text-spruce border border-spruce/30 flex items-center justify-center gap-1.5 min-h-[44px]">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>A gifter has reserved this</span>
                         </div>
@@ -212,7 +212,7 @@ export default async function PublicProfilePage({ params }: Props) {
               })}
             </div>
           ) : (
-            <div className="paper-tag rounded-3xl p-12 text-center max-w-md mx-auto my-8 space-y-3 bg-white border border-parchment">
+            <div className="paper-tag rounded-3xl p-12 text-center max-w-md mx-auto my-8 space-y-3 bg-white border border-parchment md-elevation-1">
               <PackageOpen className="w-10 h-10 text-caramel mx-auto stroke-1" />
               <h3 className="text-lg font-serif font-bold text-ink">No items listed yet</h3>
               <p className="text-sm text-slate-muted">
@@ -228,7 +228,7 @@ export default async function PublicProfilePage({ params }: Props) {
           <span className="hidden sm:inline text-parchment">·</span>
           <span>Privacy-first gift coordination</span>
           <span className="hidden sm:inline text-parchment">·</span>
-          <Link href="/" className="text-caramel hover:text-mocha font-medium hover:underline">
+          <Link href="/" className="text-caramel hover:text-mocha font-medium hover:underline py-1">
             Create your own wishlist
           </Link>
         </footer>

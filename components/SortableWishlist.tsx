@@ -18,8 +18,10 @@ import {
   CheckCircle2, 
   Eye, 
   EyeOff, 
-  Sparkles
+  Sparkles,
+  Loader2
 } from 'lucide-react'
+import MaterialErrorBanner from '@/components/MaterialErrorBanner'
 
 export interface WishlistItem {
   id: string
@@ -50,6 +52,7 @@ export default function SortableWishlist({
   }
 
   const [filterMode, setFilterMode] = useState<'all' | 'available' | 'gifted'>('all')
+  const [dbError, setDbError] = useState<unknown | null>(null)
 
   const [hideGifted, setHideGifted] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
@@ -113,29 +116,52 @@ export default function SortableWishlist({
 
       const newItems = arrayMove(items, oldIndex, newIndex)
       setItems(newItems)
+      setDbError(null)
 
-      // Single atomic batch RPC call
-      const { error: rpcError } = await supabase.rpc('reorder_wishlist_items', {
-        p_item_ids: newItems.map((i) => i.id)
-      })
+      try {
+        // Single atomic batch RPC call
+        const { error: rpcError } = await supabase.rpc('reorder_wishlist_items', {
+          p_item_ids: newItems.map((i) => i.id)
+        })
 
-      if (rpcError) {
-        const updates = newItems.map((item, index) =>
-          supabase.from('wishlist_items').update({ sort_order: index }).eq('id', item.id)
-        )
-        await Promise.all(updates)
+        if (rpcError) {
+          const updates = newItems.map((item, index) =>
+            supabase.from('wishlist_items').update({ sort_order: index }).eq('id', item.id)
+          )
+          const results = await Promise.all(updates)
+          const failedResult = results.find(r => r.error)
+          if (failedResult?.error) {
+            setDbError(failedResult.error)
+            return
+          }
+        }
+
+        router.refresh()
+      } catch (err) {
+        setDbError(err)
       }
-
-      router.refresh()
     }
   }
 
   const handleDeleteItem = async (itemId: string, itemTitle: string | null) => {
     if (window.confirm(`Permanently remove "${itemTitle || 'this item'}" from your wishlist?`)) {
+      setDbError(null)
+      const previousItems = items
       setItems((prev) => prev.filter((i) => i.id !== itemId))
       setHiddenItemIds((prev) => prev.filter((id) => id !== itemId))
-      await supabase.from('wishlist_items').delete().eq('id', itemId)
-      router.refresh()
+
+      try {
+        const { error: delError } = await supabase.from('wishlist_items').delete().eq('id', itemId)
+        if (delError) {
+          setItems(previousItems)
+          setDbError(delError)
+          return
+        }
+        router.refresh()
+      } catch (err) {
+        setItems(previousItems)
+        setDbError(err)
+      }
     }
   }
 
@@ -162,14 +188,22 @@ export default function SortableWishlist({
 
   return (
     <div className="space-y-4">
+      {Boolean(dbError) && (
+        <MaterialErrorBanner
+          error={dbError}
+          onDismiss={() => setDbError(null)}
+          fallbackMessage="Database operation could not be saved."
+        />
+      )}
+
       {/* Editorial Filter & Visibility Controls */}
-      <div className="paper-tag rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-parchment shadow-2xs">
+      <div className="paper-tag rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-parchment md-elevation-1">
         {/* Filter Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto p-1 bg-parchment-light/60 rounded-xl border border-parchment/60">
+        <div className="flex items-center gap-1 overflow-x-auto p-1 bg-parchment-light/60 rounded-xl border border-parchment/60 scrollbar-none">
           <button
             type="button"
             onClick={() => setFilterMode('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+            className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 min-h-[36px] ${
               filterMode === 'all'
                 ? 'bg-white text-ink shadow-2xs border border-parchment/70'
                 : 'text-slate-muted hover:text-ink'
@@ -180,7 +214,7 @@ export default function SortableWishlist({
           <button
             type="button"
             onClick={() => setFilterMode('available')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+            className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 min-h-[36px] ${
               filterMode === 'available'
                 ? 'bg-white text-ink shadow-2xs border border-parchment/70'
                 : 'text-slate-muted hover:text-ink'
@@ -191,7 +225,7 @@ export default function SortableWishlist({
           <button
             type="button"
             onClick={() => setFilterMode('gifted')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+            className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 min-h-[36px] ${
               filterMode === 'gifted'
                 ? 'bg-white text-ink shadow-2xs border border-parchment/70'
                 : 'text-slate-muted hover:text-ink'
@@ -202,12 +236,12 @@ export default function SortableWishlist({
         </div>
 
         {/* Hide Gifted Toggle & Hidden Counter */}
-        <div className="flex items-center gap-2 justify-end">
+        <div className="flex items-center gap-2 justify-end flex-wrap">
           {giftedCount > 0 && (
             <button
               type="button"
               onClick={toggleHideGifted}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border min-h-[36px] ${
                 hideGifted
                   ? 'bg-mocha text-cotton border-mocha/30 shadow-2xs'
                   : 'bg-white text-slate-muted hover:text-ink border-parchment hover:bg-parchment-light/40'
@@ -232,9 +266,9 @@ export default function SortableWishlist({
             <button
               type="button"
               onClick={handleUnhideAll}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold text-ribbon hover:text-ribbon-hover bg-ribbon-light/80 border border-ribbon/20 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-[11px] font-semibold text-ribbon hover:text-ribbon-hover bg-ribbon-light/80 border border-ribbon/20 transition-colors cursor-pointer min-h-[36px]"
             >
-              <span>Unhide ({totalHiddenCount})</span>
+              <span>Unhide All ({totalHiddenCount})</span>
             </button>
           )}
         </div>
@@ -252,6 +286,7 @@ export default function SortableWishlist({
                   surpriseMode={surpriseMode} 
                   onDelete={handleDeleteItem}
                   onToggleHide={toggleHideSpecificItem}
+                  onError={(err) => setDbError(err)}
                   isIndividuallyHidden={hiddenItemIds.includes(item.id)}
                 />
               ))}
@@ -259,45 +294,39 @@ export default function SortableWishlist({
           </SortableContext>
         </DndContext>
       ) : (
-        <div className="paper-tag rounded-3xl p-10 text-center space-y-3 bg-white border border-parchment">
-          <div className="w-12 h-12 rounded-2xl bg-parchment-light border border-parchment flex items-center justify-center mx-auto text-slate-muted">
-            <EyeOff className="w-5 h-5 stroke-[1.5]" />
+        <div className="paper-tag rounded-3xl p-10 text-center space-y-3 bg-white border border-parchment md-elevation-1">
+          <div className="w-12 h-12 rounded-2xl bg-parchment-light text-caramel flex items-center justify-center mx-auto border border-parchment">
+            <PackageOpen className="w-6 h-6 stroke-1 text-slate-muted" />
           </div>
-          <h3 className="text-base font-serif font-bold text-ink">
-            {totalHiddenCount > 0 ? 'All matching items are currently hidden' : 'No items match this filter'}
-          </h3>
-          <p className="text-xs text-slate-muted max-w-xs mx-auto">
-            {totalHiddenCount > 0 
-              ? `You have ${totalHiddenCount} item${totalHiddenCount === 1 ? '' : 's'} hidden from view.`
-              : 'Add new items or select a different filter category above.'}
-          </p>
-          {totalHiddenCount > 0 && (
-            <button
-              type="button"
-              onClick={handleUnhideAll}
-              className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-ink text-white hover:bg-ink/90 transition-all cursor-pointer"
-            >
-              <Eye className="w-3.5 h-3.5 text-blush" />
-              <span>Unhide All Items</span>
-            </button>
-          )}
+          <div className="space-y-1">
+            <h3 className="font-serif font-bold text-ink text-sm sm:text-base">
+              {filterMode !== 'all' ? 'No items match this filter' : 'Your wishlist registry is empty'}
+            </h3>
+            <p className="text-xs text-slate-muted max-w-sm mx-auto">
+              {filterMode !== 'all' 
+                ? 'Try toggling filters or unhiding previously saved gifts.'
+                : 'Paste a product link above or enter details manually to start curating.'}
+            </p>
+          </div>
         </div>
       )}
     </div>
   )
 }
 
-function SortableItem({ 
-  item, 
+function SortableItem({
+  item,
   surpriseMode,
   onDelete,
   onToggleHide,
-  isIndividuallyHidden
-}: { 
+  onError,
+  isIndividuallyHidden,
+}: {
   item: WishlistItem
-  surpriseMode?: boolean
-  onDelete: (id: string, title: string | null) => Promise<void>
+  surpriseMode: boolean
+  onDelete: (id: string, title: string | null) => void
   onToggleHide: (id: string) => void
+  onError: (err: unknown) => void
   isIndividuallyHidden: boolean
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
@@ -316,19 +345,19 @@ function SortableItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`paper-tag rounded-2xl p-3.5 sm:p-4.5 flex items-center gap-3 sm:gap-4 transition-all bg-white border border-parchment ${
+      className={`paper-tag rounded-2xl p-3 sm:p-4.5 flex items-center gap-3 sm:gap-4 transition-all bg-white border border-parchment md-elevation-1 ${
         isDragging 
           ? 'shadow-xl ring-2 ring-caramel/40 opacity-95 scale-[1.01]' 
-          : 'hover:border-caramel/30 hover:shadow-sm'
-      } ${isGifted ? 'bg-gradient-to-r from-white via-white to-parchment-light/20' : ''}`}
+          : 'hover:border-caramel/30 hover:md-elevation-2'
+      } ${isGifted ? 'bg-gradient-to-r from-white via-white to-parchment-light/25' : ''}`}
     >
-      {/* Drag Handle */}
+      {/* Drag Handle with touch target */}
       <button
         {...attributes}
         {...listeners}
         type="button"
         aria-label="Drag to reorder"
-        className="cursor-grab active:cursor-grabbing text-slate-muted hover:text-ink focus:outline-none p-1.5 rounded-lg hover:bg-parchment-light transition-colors shrink-0"
+        className="cursor-grab active:cursor-grabbing text-slate-muted hover:text-ink focus:outline-none p-2 rounded-xl hover:bg-parchment-light transition-colors shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
       >
         <GripVertical className="w-4 h-4 stroke-[2]" />
       </button>
@@ -352,15 +381,15 @@ function SortableItem({
 
       {/* Content or Inline Edit Form */}
       {isEditing ? (
-        <WishlistItemEditForm item={item} setIsEditing={setIsEditing} />
+        <WishlistItemEditForm item={item} setIsEditing={setIsEditing} onError={onError} />
       ) : (
-        <div className="flex-1 min-w-0 pr-2">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex-1 min-w-0 pr-1">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <a
               href={item.product_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-sm text-ink hover:text-ribbon line-clamp-1 transition-colors flex items-center gap-1 group"
+              className="font-semibold text-xs sm:text-sm text-ink hover:text-ribbon line-clamp-1 transition-colors flex items-center gap-1 group"
             >
               <span>{item.title || 'Untitled Wishlist Item'}</span>
               <ExternalLink className="w-3 h-3 text-slate-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
@@ -368,13 +397,13 @@ function SortableItem({
 
             {/* Badges for status */}
             {!surpriseMode && isGifted && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blush/40 text-mocha border border-blush/80">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-blush/40 text-mocha border border-blush/80">
                 <Sparkles className="w-3 h-3 text-ribbon" />
                 <span>Gifted</span>
               </span>
             )}
             {!surpriseMode && isReserved && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-spruce-light text-spruce border border-spruce/30">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-spruce-light text-spruce border border-spruce/30">
                 <CheckCircle2 className="w-3 h-3 text-spruce" />
                 <span>Reserved</span>
               </span>
@@ -383,52 +412,52 @@ function SortableItem({
 
           <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-muted">
             {item.category && (
-              <span className="px-2 py-0.5 rounded-md bg-parchment-light/60 font-medium text-[11px] text-ink-muted">
+              <span className="px-2 py-0.5 rounded-md bg-parchment-light/60 font-medium text-[10px] sm:text-[11px] text-ink-muted">
                 {item.category}
               </span>
             )}
             {item.price && (
               <>
                 <span className="text-parchment">·</span>
-                <span className="font-semibold text-ink tabular-nums">{item.price}</span>
+                <span className="font-semibold text-ink tabular-nums text-xs sm:text-sm">{item.price}</span>
               </>
             )}
           </div>
         </div>
       )}
 
-      {/* Action Suite (Edit, Hide, Remove) */}
+      {/* Action Suite (Edit, Hide, Remove) with accessible min touch sizes */}
       {!isEditing && (
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
           {/* Hide/Unhide Item Button */}
           <button
             onClick={() => onToggleHide(item.id)}
             type="button"
             title={isIndividuallyHidden ? 'Unhide item' : 'Hide item from list'}
             aria-label={isIndividuallyHidden ? 'Unhide item' : 'Hide item from list'}
-            className="p-1.5 rounded-lg text-slate-muted hover:text-ink hover:bg-parchment-light transition-colors cursor-pointer"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl text-slate-muted hover:text-ink hover:bg-parchment-light transition-colors cursor-pointer flex items-center justify-center"
           >
             {isIndividuallyHidden ? <Eye className="w-4 h-4 text-caramel" /> : <EyeOff className="w-4 h-4" />}
           </button>
 
-          {/* Edit Button (Available for active or gifted to update notes) */}
+          {/* Edit Button */}
           <button
             onClick={() => setIsEditing(true)}
             type="button"
             title="Edit item details"
             aria-label="Edit item"
-            className="p-1.5 rounded-lg text-slate-muted hover:text-ink hover:bg-parchment-light transition-colors cursor-pointer"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl text-slate-muted hover:text-ink hover:bg-parchment-light transition-colors cursor-pointer flex items-center justify-center"
           >
             <Edit2 className="w-4 h-4" />
           </button>
 
-          {/* Remove / Delete Button (Allows removing gifted, reserved, or available items!) */}
+          {/* Remove / Delete Button */}
           <button
             onClick={() => onDelete(item.id, item.title)}
             type="button"
             title={isGifted ? 'Remove gifted item from wishlist' : 'Remove item'}
             aria-label={isGifted ? 'Remove gifted item from wishlist' : 'Remove item'}
-            className="p-1.5 rounded-lg text-slate-muted hover:text-ribbon hover:bg-ribbon-light transition-colors cursor-pointer"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl text-slate-muted hover:text-ribbon hover:bg-ribbon-light transition-colors cursor-pointer flex items-center justify-center"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -438,7 +467,15 @@ function SortableItem({
   )
 }
 
-function WishlistItemEditForm({ item, setIsEditing }: { item: WishlistItem; setIsEditing: (v: boolean) => void }) {
+function WishlistItemEditForm({ 
+  item, 
+  setIsEditing,
+  onError 
+}: { 
+  item: WishlistItem
+  setIsEditing: (v: boolean) => void
+  onError: (err: unknown) => void
+}) {
   const supabase = createClient()
   const router = useRouter()
   const CATEGORIES = ['All Gifts', 'Kitchenware', 'Home & Bedding', 'Books', 'Audio & Tech', 'Style', 'Experiences', 'Other']
@@ -450,9 +487,24 @@ function WishlistItemEditForm({ item, setIsEditing }: { item: WishlistItem; setI
 
   const handleUpdate = async () => {
     setSaving(true)
-    await supabase.from('wishlist_items').update({ title, price, category }).eq('id', item.id)
-    setIsEditing(false)
-    router.refresh()
+    try {
+      const { error: updateError } = await supabase
+        .from('wishlist_items')
+        .update({ title, price, category })
+        .eq('id', item.id)
+
+      if (updateError) {
+        onError(updateError)
+        return
+      }
+
+      setIsEditing(false)
+      router.refresh()
+    } catch (err) {
+      onError(err)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -461,20 +513,20 @@ function WishlistItemEditForm({ item, setIsEditing }: { item: WishlistItem; setI
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="flex-1 px-3 py-1.5 text-xs border border-parchment rounded-xl bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel"
+        className="flex-1 px-3 py-2 text-xs border border-parchment rounded-xl bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel min-h-[36px]"
         placeholder="Product Title"
       />
       <input
         type="text"
         value={price}
         onChange={(e) => setPrice(e.target.value)}
-        className="w-full sm:w-24 px-3 py-1.5 text-xs border border-parchment rounded-xl bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel tabular-nums"
+        className="w-full sm:w-24 px-3 py-2 text-xs border border-parchment rounded-xl bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel tabular-nums min-h-[36px]"
         placeholder="Price"
       />
       <select
         value={category}
         onChange={(e) => setCategory(e.target.value)}
-        className="w-full sm:w-32 px-2.5 py-1.5 text-xs border border-parchment rounded-xl bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer"
+        className="w-full sm:w-32 px-2.5 py-2 text-xs border border-parchment rounded-xl bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer min-h-[36px]"
       >
         {CATEGORIES.map((cat) => (
           <option key={cat} value={cat}>{cat}</option>
@@ -485,15 +537,15 @@ function WishlistItemEditForm({ item, setIsEditing }: { item: WishlistItem; setI
           onClick={handleUpdate}
           disabled={saving}
           type="button"
-          className="inline-flex items-center gap-1 bg-mocha text-cotton px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-mocha-hover transition-all cursor-pointer shadow-2xs"
+          className="inline-flex items-center gap-1 bg-mocha text-cotton px-3.5 py-2 rounded-xl text-xs font-semibold hover:bg-mocha-hover transition-all cursor-pointer shadow-2xs min-h-[36px]"
         >
-          <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
           <span>Save</span>
         </button>
         <button
           onClick={() => setIsEditing(false)}
           type="button"
-          className="p-1.5 rounded-lg text-slate-muted hover:text-ink hover:bg-parchment-light transition-colors cursor-pointer"
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-muted hover:text-ink hover:bg-parchment-light transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>

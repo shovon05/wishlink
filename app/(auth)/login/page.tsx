@@ -4,18 +4,19 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Gift, ArrowLeft, AlertCircle, Sparkles, Fingerprint, Lock } from 'lucide-react'
+import { Gift, ArrowLeft, Sparkles, Fingerprint, Lock } from 'lucide-react'
+import MaterialErrorBanner from '@/components/MaterialErrorBanner'
 
 export default function LoginPage() {
   const supabase = createClient()
   const router = useRouter()
-  const [errorMsg, setErrorMsg] = useState('')
+  const [errorMsg, setErrorMsg] = useState<unknown | null>(null)
   const [loadingGoogle, setLoadingGoogle] = useState(false)
   const [loadingPasskey, setLoadingPasskey] = useState(false)
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin')
 
   const handleGoogleLogin = async () => {
-    setErrorMsg('')
+    setErrorMsg(null)
     setLoadingGoogle(true)
 
     try {
@@ -27,17 +28,16 @@ export default function LoginPage() {
       })
 
       if (error) {
-        throw new Error('Google authentication was interrupted. Please try again.')
+        setErrorMsg(error)
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'An unexpected error occurred during authentication.'
-      setErrorMsg(message)
+      setErrorMsg(err)
       setLoadingGoogle(false)
     }
   }
 
   const handlePasskeyLogin = async () => {
-    setErrorMsg('')
+    setErrorMsg(null)
     setLoadingPasskey(true)
 
     try {
@@ -49,17 +49,18 @@ export default function LoginPage() {
 
       if (error) {
         if (error.message.toLowerCase().includes('cancel') || error.message.includes('NotAllowedError')) {
-          throw new Error('Biometric sign-in was cancelled.')
+          setErrorMsg('Biometric sign-in was cancelled.')
+          return
         }
-        throw new Error('Passkey not recognized. Sign in with Google first to enroll your biometric passkey.')
+        setErrorMsg(error)
+        return
       }
 
       if (data?.session) {
         router.push('/dashboard')
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'An error occurred during passkey authentication.'
-      setErrorMsg(message)
+      setErrorMsg(err)
     } finally {
       setLoadingPasskey(false)
     }
@@ -77,19 +78,19 @@ export default function LoginPage() {
       <header className="w-full max-w-md flex items-center justify-between z-10">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-muted hover:text-ink transition-colors px-3 py-1.5 rounded-full hover:bg-parchment-light/80 border border-transparent hover:border-parchment"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-muted hover:text-ink transition-colors px-3 py-2 rounded-full hover:bg-parchment-light/80 border border-transparent hover:border-parchment min-h-[40px]"
         >
           <ArrowLeft className="w-3.5 h-3.5 stroke-[2.2]" />
           <span>Return to Wishlink</span>
         </Link>
-        <span className="text-[11px] font-mono tracking-widest uppercase text-caramel font-medium">
+        <span className="text-[11px] font-mono tracking-widest uppercase text-caramel font-semibold">
           Studio Access
         </span>
       </header>
 
       {/* Main Auth Container */}
       <div className="w-full max-w-md my-auto py-6 z-10">
-        <div className="paper-tag rounded-3xl p-6 sm:p-9 space-y-7 relative border border-parchment shadow-md bg-white">
+        <div className="paper-tag rounded-3xl p-6 sm:p-9 space-y-7 relative border border-parchment md-elevation-2 bg-white">
           
           {/* Bespoke Crest & Emblem */}
           <div className="text-center space-y-3">
@@ -124,8 +125,8 @@ export default function LoginPage() {
               type="button"
               role="tab"
               aria-selected={activeTab === 'signin'}
-              onClick={() => { setActiveTab('signin'); setErrorMsg('') }}
-              className={`py-2 px-3 rounded-xl transition-all cursor-pointer text-center ${
+              onClick={() => { setActiveTab('signin'); setErrorMsg(null) }}
+              className={`py-2 px-3 rounded-xl transition-all cursor-pointer text-center min-h-[40px] ${
                 activeTab === 'signin'
                   ? 'bg-white text-ink shadow-xs font-bold border border-parchment/60'
                   : 'text-slate-muted hover:text-ink'
@@ -137,8 +138,8 @@ export default function LoginPage() {
               type="button"
               role="tab"
               aria-selected={activeTab === 'signup'}
-              onClick={() => { setActiveTab('signup'); setErrorMsg('') }}
-              className={`py-2 px-3 rounded-xl transition-all cursor-pointer text-center ${
+              onClick={() => { setActiveTab('signup'); setErrorMsg(null) }}
+              className={`py-2 px-3 rounded-xl transition-all cursor-pointer text-center min-h-[40px] ${
                 activeTab === 'signup'
                   ? 'bg-white text-ink shadow-xs font-bold border border-parchment/60'
                   : 'text-slate-muted hover:text-ink'
@@ -148,15 +149,13 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Error Banner */}
-          {errorMsg && (
-            <div 
-              role="alert" 
-              className="p-3.5 rounded-2xl bg-ribbon-light border border-ribbon/30 text-ribbon text-xs flex items-start gap-2.5 animate-fadeIn"
-            >
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-ribbon" />
-              <span className="leading-snug font-medium">{errorMsg}</span>
-            </div>
+          {/* Error Banner with Material diagnostics */}
+          {Boolean(errorMsg) && (
+            <MaterialErrorBanner
+              error={errorMsg}
+              onDismiss={() => setErrorMsg(null)}
+              fallbackMessage="Authentication could not be completed."
+            />
           )}
 
           {/* Authentication Actions */}
@@ -166,7 +165,7 @@ export default function LoginPage() {
               onClick={handleGoogleLogin}
               disabled={loadingGoogle || loadingPasskey}
               type="button"
-              className="w-full flex items-center justify-center gap-3 bg-white border border-parchment hover:border-caramel/50 text-ink px-5 py-3.5 rounded-2xl text-sm font-semibold hover:bg-parchment-light/40 disabled:opacity-50 transition-all shadow-xs cursor-pointer active:scale-98 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-caramel"
+              className="w-full flex items-center justify-center gap-3 bg-white border border-parchment hover:border-caramel/50 text-ink px-5 py-3.5 rounded-2xl text-sm font-semibold hover:bg-parchment-light/40 disabled:opacity-50 transition-all md-elevation-1 cursor-pointer active:scale-98 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-caramel min-h-[48px]"
             >
               <svg width="18" height="18" viewBox="0 0 48 48" className="shrink-0" aria-hidden="true">
                 <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
@@ -194,7 +193,7 @@ export default function LoginPage() {
               onClick={handlePasskeyLogin}
               disabled={loadingGoogle || loadingPasskey}
               type="button"
-              className="posh-button-primary w-full flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold active:scale-98 disabled:opacity-50 cursor-pointer border border-mocha/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-caramel"
+              className="posh-button-primary w-full flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold active:scale-98 disabled:opacity-50 cursor-pointer border border-mocha/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-caramel min-h-[48px]"
             >
               <Fingerprint className="w-4 h-4 text-blush stroke-[2.2]" />
               <span>

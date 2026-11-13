@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Plus, Link2, Sparkles, Loader2, PackageOpen, AlertCircle, Info } from 'lucide-react'
+import { Plus, Link2, Sparkles, Loader2, PackageOpen, Info } from 'lucide-react'
+import MaterialErrorBanner from '@/components/MaterialErrorBanner'
 
 const CATEGORIES = ['All Gifts', 'Kitchenware', 'Home & Bedding', 'Books', 'Audio & Tech', 'Style', 'Experiences', 'Other']
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'BDT', 'INR', 'JPY']
@@ -16,7 +17,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [formError, setFormError] = useState('')
+  const [formError, setFormError] = useState<unknown | null>(null)
   const [infoNotice, setInfoNotice] = useState('')
   const [preview, setPreview] = useState<{
     title: string
@@ -31,7 +32,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
     if (!sanitizedUrl) return
 
     setLoading(true)
-    setFormError('')
+    setFormError(null)
     setInfoNotice('')
 
     try {
@@ -54,7 +55,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
         category: 'All Gifts',
       })
     } catch {
-      setInfoNotice('Could not reach this store automatically. You can fill in the details below.')
+      setInfoNotice('Could not reach this boutique automatically. You can fill in the details below.')
       setPreview({
         title: '',
         image: '',
@@ -75,7 +76,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
       currency: 'USD',
       category: 'All Gifts',
     })
-    setFormError('')
+    setFormError(null)
     setInfoNotice('')
   }
 
@@ -95,16 +96,20 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
     const priceAmount = !isNaN(numericAmount) && numericAmount > 0 ? numericAmount : null
 
     setSaving(true)
-    setFormError('')
+    setFormError(null)
 
     try {
-      const { data: maxItem } = await supabase
+      const { data: maxItem, error: maxItemError } = await supabase
         .from('wishlist_items')
         .select('sort_order')
         .eq('user_id', userId)
         .order('sort_order', { ascending: false })
         .limit(1)
         .maybeSingle()
+
+      if (maxItemError) {
+        console.warn('Database sort_order lookup notice:', maxItemError)
+      }
 
       const nextSortOrder = maxItem ? maxItem.sort_order + 1 : 0
 
@@ -121,15 +126,15 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
       })
 
       if (insertError) {
-        throw new Error(insertError.message || 'Failed to save item to your wishlist.')
+        setFormError(insertError)
+        return
       }
 
       setUrl('')
       setPreview(null)
       router.refresh()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unable to save item. Please try again.'
-      setFormError(msg)
+      setFormError(err)
     } finally {
       setSaving(false)
     }
@@ -151,18 +156,20 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
           <button
             type="button"
             onClick={handleManualOpen}
-            className="self-start sm:self-auto text-xs text-caramel hover:text-mocha font-semibold transition-colors cursor-pointer"
+            className="self-start sm:self-auto text-xs text-caramel hover:text-mocha font-semibold transition-colors cursor-pointer py-1"
           >
             + Enter details manually
           </button>
         )}
       </div>
 
-      {formError && (
-        <div className="p-3.5 rounded-2xl bg-ribbon-light border border-ribbon/30 text-ribbon text-xs flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{formError}</span>
-        </div>
+      {Boolean(formError) && (
+        <MaterialErrorBanner
+          error={formError}
+          onDismiss={() => setFormError(null)}
+          onRetry={preview ? handleSave : undefined}
+          fallbackMessage="Unable to save item to wishlist."
+        />
       )}
 
       {infoNotice && (
@@ -181,7 +188,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="Paste product link (Amazon, Etsy, Apple, or local boutique)..."
-              className="w-full pl-9 pr-4 py-3 rounded-2xl border border-parchment text-sm bg-white text-ink placeholder:text-slate-muted/60 focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel transition-all shadow-2xs"
+              className="w-full pl-9 pr-4 py-3 rounded-2xl border border-parchment text-sm bg-white text-ink placeholder:text-slate-muted/60 focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel transition-all md-elevation-1 min-h-[44px]"
             />
             <Link2 className="w-4 h-4 text-caramel absolute left-3 top-3.5" />
           </div>
@@ -190,7 +197,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
             onClick={fetchDetails}
             disabled={loading || !url.trim()}
             type="button"
-            className="posh-button-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-xs font-semibold disabled:opacity-40 cursor-pointer shrink-0"
+            className="posh-button-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-xs font-semibold disabled:opacity-40 cursor-pointer shrink-0 min-h-[44px]"
           >
             {loading ? (
               <>
@@ -208,8 +215,8 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
       )}
 
       {preview && (
-        <div className="mt-2 p-5 rounded-3xl bg-parchment-light/40 border border-parchment flex flex-col sm:flex-row gap-5 items-start">
-          <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-2xl overflow-hidden relative border border-parchment bg-white shadow-2xs">
+        <div className="mt-2 p-5 rounded-3xl bg-white border border-parchment md-elevation-1 flex flex-col sm:flex-row gap-5 items-start">
+          <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-2xl overflow-hidden relative border border-parchment bg-cotton/50 shadow-2xs">
             {preview.image ? (
               <Image
                 src={preview.image}
@@ -238,7 +245,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                 value={preview.title}
                 onChange={(e) => setPreview({ ...preview, title: e.target.value })}
                 placeholder="e.g. Linen Bedding Set"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-parchment text-sm bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel shadow-2xs"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-parchment text-sm bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel min-h-[44px]"
               />
             </div>
 
@@ -252,7 +259,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://..."
-                className="w-full px-3.5 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel font-mono"
+                className="w-full px-3.5 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel font-mono min-h-[40px]"
               />
             </div>
 
@@ -267,7 +274,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                   value={preview.price}
                   onChange={(e) => setPreview({ ...preview, price: e.target.value })}
                   placeholder="e.g. $45.00"
-                  className="w-full px-3.5 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel tabular-nums"
+                  className="w-full px-3.5 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel tabular-nums min-h-[40px]"
                 />
               </div>
 
@@ -278,7 +285,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                 <select
                   value={preview.currency}
                   onChange={(e) => setPreview({ ...preview, currency: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer"
+                  className="w-full px-3 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer min-h-[40px]"
                 >
                   {CURRENCIES.map((cur) => (
                     <option key={cur} value={cur}>{cur}</option>
@@ -293,7 +300,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                 <select
                   value={preview.category}
                   onChange={(e) => setPreview({ ...preview, category: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer"
+                  className="w-full px-3 py-2 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel cursor-pointer min-h-[40px]"
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>{cat}</option>
@@ -312,7 +319,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                 value={preview.image}
                 onChange={(e) => setPreview({ ...preview, image: e.target.value })}
                 placeholder="https://images... (paste image link)"
-                className="w-full px-3.5 py-1.5 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel font-mono"
+                className="w-full px-3.5 py-1.5 rounded-xl border border-parchment text-xs bg-white text-ink focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel font-mono min-h-[40px]"
               />
             </div>
 
@@ -321,10 +328,10 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                 type="button"
                 onClick={() => {
                   setPreview(null)
-                  setFormError('')
+                  setFormError(null)
                   setInfoNotice('')
                 }}
-                className="px-4 py-2 text-xs font-semibold text-slate-muted hover:text-ink transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-slate-muted hover:text-ink transition-colors cursor-pointer min-h-[40px]"
               >
                 Cancel
               </button>
@@ -332,7 +339,7 @@ export default function AddWishlistItemForm({ userId }: { userId: string }) {
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="posh-button-rose inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 cursor-pointer"
+                className="posh-button-rose inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 cursor-pointer min-h-[40px]"
               >
                 {saving ? (
                   <>

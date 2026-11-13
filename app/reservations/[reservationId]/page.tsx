@@ -4,7 +4,8 @@ import { useEffect, useState, use } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ShieldCheck, MapPin, Copy, Check, Clock, RefreshCw, AlertCircle, Home, Lock } from 'lucide-react'
+import { ShieldCheck, MapPin, Copy, Check, Clock, RefreshCw, Home, Lock } from 'lucide-react'
+import MaterialErrorBanner from '@/components/MaterialErrorBanner'
 
 type Props = {
   params: Promise<{ reservationId: string }>
@@ -18,12 +19,12 @@ export default function ReservationTrackerPage({ params }: Props) {
   const [token, setToken] = useState<string | null>(null)
   const [address, setAddress] = useState<{ label: string; full_address: string } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<unknown | null>(null)
   const [copiedAddress, setCopiedAddress] = useState(false)
 
   const fetchAddress = async (tokenValue: string) => {
     setLoading(true)
-    setError('')
+    setError(null)
 
     try {
       const { data, error: rpcError } = await supabase.rpc('get_shared_address', {
@@ -31,7 +32,10 @@ export default function ReservationTrackerPage({ params }: Props) {
         p_access_token: tokenValue,
       })
 
-      if (rpcError) throw new Error(rpcError.message)
+      if (rpcError) {
+        setError(rpcError)
+        return
+      }
 
       if (data && data.length > 0) {
         setAddress({
@@ -41,8 +45,8 @@ export default function ReservationTrackerPage({ params }: Props) {
       } else {
         setAddress(null)
       }
-    } catch {
-      setError('Failed to load reservation details. The link may be invalid or expired.')
+    } catch (err) {
+      setError(err)
     } finally {
       setLoading(false)
     }
@@ -87,7 +91,10 @@ export default function ReservationTrackerPage({ params }: Props) {
         })
 
         if (!ignore) {
-          if (rpcError) throw new Error(rpcError.message)
+          if (rpcError) {
+            setError(rpcError)
+            return
+          }
           if (data && data.length > 0) {
             setAddress({
               label: data[0].address_label,
@@ -97,9 +104,9 @@ export default function ReservationTrackerPage({ params }: Props) {
             setAddress(null)
           }
         }
-      } catch {
+      } catch (err) {
         if (!ignore) {
-          setError('Failed to load reservation details. The link may be invalid or expired.')
+          setError(err)
         }
       } finally {
         if (!ignore) {
@@ -127,30 +134,27 @@ export default function ReservationTrackerPage({ params }: Props) {
 
   return (
     <>
-      <head>
-        <meta name="referrer" content="no-referrer" />
-      </head>
-      <main className="min-h-screen bg-cotton py-12 px-4 flex justify-center items-start selection:bg-blush/50 selection:text-ink">
+      <main className="min-h-screen bg-cotton py-8 sm:py-12 px-4 flex justify-center items-start selection:bg-blush/50 selection:text-ink">
         <div className="max-w-lg w-full space-y-6">
 
           {/* Top Bar */}
           <div className="flex items-center justify-between px-1">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-muted hover:text-ink transition-colors px-2.5 py-1.5 rounded-xl hover:bg-parchment-light/60"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-muted hover:text-ink transition-colors px-3 py-2 rounded-xl hover:bg-parchment-light/60 min-h-[40px]"
             >
-              <Home className="w-3.5 h-3.5" />
+              <Home className="w-3.5 h-3.5 text-caramel" />
               <span>Wishlink</span>
             </Link>
 
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-spruce bg-spruce-light px-3 py-1 rounded-full border border-spruce/30">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-spruce bg-spruce-light px-3 py-1.5 rounded-full border border-spruce/30">
               <ShieldCheck className="w-3.5 h-3.5 text-spruce" />
-              Private Token Access
+              Private Token Ticket
             </span>
           </div>
 
           {/* Delivery Card */}
-          <div className="paper-tag rounded-3xl p-6 sm:p-8 space-y-6 bg-white border border-parchment shadow-xs">
+          <div className="paper-tag rounded-3xl p-6 sm:p-8 space-y-6 bg-white border border-parchment md-elevation-1">
 
             <div>
               <span className="text-[11px] font-mono text-caramel uppercase tracking-wider block mb-1">
@@ -167,13 +171,12 @@ export default function ReservationTrackerPage({ params }: Props) {
                 <p className="text-xs">Checking address status...</p>
               </div>
             ) : error ? (
-              <div className="p-4 rounded-2xl bg-ribbon-light border border-ribbon/30 text-ribbon text-xs space-y-2">
-                <div className="flex items-center gap-2 font-semibold">
-                  <AlertCircle className="w-4 h-4 text-ribbon" />
-                  <span>Unable to load destination</span>
-                </div>
-                <p>{error}</p>
-              </div>
+              <MaterialErrorBanner
+                error={error}
+                onDismiss={() => setError(null)}
+                onRetry={() => token && fetchAddress(token)}
+                fallbackMessage="Failed to load reservation details. The ticket link may be invalid or expired."
+              />
             ) : address ? (
               <div className="space-y-5 animate-in fade-in duration-200">
                 {/* Address Unlocked Banner */}
@@ -200,7 +203,7 @@ export default function ReservationTrackerPage({ params }: Props) {
                     <button
                       onClick={handleCopyAddress}
                       type="button"
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-caramel hover:text-mocha cursor-pointer"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-caramel hover:text-mocha cursor-pointer py-1"
                     >
                       {copiedAddress ? <Check className="w-3.5 h-3.5 text-spruce" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedAddress ? 'Copied' : 'Copy address'}</span>
@@ -236,7 +239,7 @@ export default function ReservationTrackerPage({ params }: Props) {
                   <button
                     onClick={() => token && fetchAddress(token)}
                     type="button"
-                    className="posh-button-primary inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold cursor-pointer"
+                    className="posh-button-primary inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold cursor-pointer min-h-[44px]"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Check Again</span>

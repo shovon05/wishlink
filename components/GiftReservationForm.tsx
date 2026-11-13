@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { CheckCircle2, Shield, Heart, ArrowRight, Copy, Check } from 'lucide-react'
+import MaterialErrorBanner from '@/components/MaterialErrorBanner'
 
 interface Props {
   itemId: string
@@ -19,13 +20,15 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
   const [isAnonymous, setIsAnonymous] = useState(true)
   const [contactInfo, setContactInfo] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<unknown | null>(null)
   const [copiedLink, setCopiedLink] = useState(false)
 
   const [successData, setSuccessData] = useState<{ reservation_id: string; access_token: string } | null>(null)
 
-  const handleReserve = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleReserve = async (e?: React.FormEvent) => {
+    if (e?.preventDefault) {
+      e.preventDefault()
+    }
 
     const sanitizedContact = contactInfo.trim()
 
@@ -39,7 +42,7 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
     }
 
     setLoading(true)
-    setError('')
+    setError(null)
 
     try {
       const { data, error: rpcError } = await supabase.rpc('reserve_gift', {
@@ -50,9 +53,11 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
 
       if (rpcError) {
         if (rpcError.message.includes('no longer available')) {
-          throw new Error('Someone just reserved this gift moments ago.')
+          setError('Someone just reserved this gift moments ago.')
+          return
         }
-        throw new Error(rpcError.message || 'An unexpected error occurred. Please try again.')
+        setError(rpcError)
+        return
       }
 
       const result = Array.isArray(data) ? data[0] : data
@@ -79,8 +84,7 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
         access_token: result.access_token,
       })
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'An error occurred while reserving the gift.'
-      setError(message)
+      setError(err)
     } finally {
       setLoading(false)
     }
@@ -103,7 +107,7 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
 
     return (
       <div className="text-center py-4 space-y-6">
-        <div className="w-14 h-14 bg-spruce-light text-spruce rounded-2xl flex items-center justify-center mx-auto border border-spruce/30">
+        <div className="w-14 h-14 bg-spruce-light text-spruce rounded-2xl flex items-center justify-center mx-auto border border-spruce/30 md-elevation-1">
           <CheckCircle2 className="w-7 h-7" />
         </div>
 
@@ -116,36 +120,48 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
           </p>
         </div>
 
-        {/* Action card */}
-        <div className="p-4 rounded-2xl bg-parchment-light/40 border border-parchment text-left space-y-3">
+        {/* Private Tracker Ticket Card */}
+        <div className="paper-tag rounded-2xl p-4 sm:p-5 border border-parchment bg-parchment-light/40 space-y-3.5 text-left md-elevation-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-serif font-bold text-ink">Your Private Tracking Link</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-muted">
+              Private Tracking Link
+            </span>
             <button
               onClick={handleCopySecretLink}
               type="button"
-              className="inline-flex items-center gap-1 text-xs text-caramel hover:text-mocha font-semibold cursor-pointer"
+              className="text-xs font-semibold text-caramel hover:text-mocha inline-flex items-center gap-1.5 transition-colors cursor-pointer py-1"
             >
-              {copiedLink ? <Check className="w-3.5 h-3.5 text-spruce" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedLink ? 'Copied' : 'Copy link'}</span>
+              {copiedLink ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-emerald-700">Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy Link</span>
+                </>
+              )}
             </button>
           </div>
-          <p className="text-xs text-slate-muted">
-            Bookmark this secret link so you can view the recipient&apos;s address once approved.
-          </p>
-        </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          <p className="text-xs text-ink-muted leading-relaxed">
+            Save this link or bookmark this page to view shipping updates and delivery addresses when shared.
+          </p>
+
           <Link
             href={reservationUrl}
-            className="flex-1 posh-button-primary inline-flex items-center justify-center gap-2 py-3.5 px-5 rounded-xl text-sm font-semibold cursor-pointer"
+            className="posh-button-primary w-full py-3 px-4 rounded-xl text-xs font-semibold inline-flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
           >
-            <span>Open Delivery Tracker</span>
+            <span>Open Delivery Tracker Ticket</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
+        </div>
 
+        <div>
           <Link
             href={`/${username}`}
-            className="inline-flex items-center justify-center py-3.5 px-5 rounded-xl text-sm font-semibold text-slate-muted hover:text-ink hover:bg-parchment-light/60 transition-all border border-parchment"
+            className="text-xs text-slate-muted hover:text-ink font-semibold transition-colors py-2 inline-block min-h-[36px]"
           >
             Return to registry
           </Link>
@@ -169,9 +185,9 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
         {/* Option 1: Anonymous */}
         <label
           onClick={() => setIsAnonymous(true)}
-          className={`flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer ${
+          className={`flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer min-h-[48px] ${
             isAnonymous
-              ? 'border-caramel bg-caramel-light/30 shadow-2xs'
+              ? 'border-caramel bg-caramel-light/40 md-elevation-1'
               : 'border-parchment bg-white hover:bg-parchment-light/40 text-slate-muted'
           }`}
         >
@@ -196,9 +212,9 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
         {/* Option 2: With name */}
         <label
           onClick={() => setIsAnonymous(false)}
-          className={`flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer ${
+          className={`flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer min-h-[48px] ${
             !isAnonymous
-              ? 'border-caramel bg-caramel-light/30 shadow-2xs'
+              ? 'border-caramel bg-caramel-light/40 md-elevation-1'
               : 'border-parchment bg-white hover:bg-parchment-light/40 text-slate-muted'
           }`}
         >
@@ -229,7 +245,7 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
                   value={contactInfo}
                   onChange={(e) => setContactInfo(e.target.value)}
                   placeholder="Your name or friendly note (e.g. Alex & Sam)"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-parchment text-sm bg-white text-ink placeholder:text-slate-muted/60 focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel transition-colors"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-parchment text-sm bg-white text-ink placeholder:text-slate-muted/60 focus:outline-none focus:border-caramel focus:ring-1 focus:ring-caramel transition-colors min-h-[44px]"
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
@@ -238,21 +254,19 @@ export default function GiftReservationForm({ itemId, itemTitle, username, petNa
         </label>
       </div>
 
-      {error && (
-        <div className="p-3.5 rounded-2xl bg-ribbon-light border border-ribbon/30 text-ribbon text-xs space-y-1">
-          <p>{error}</p>
-          {error.includes('moments ago') && (
-            <Link href={`/${username}`} className="font-semibold underline inline-block">
-              Return to registry
-            </Link>
-          )}
-        </div>
+      {Boolean(error) && (
+        <MaterialErrorBanner
+          error={error}
+          onDismiss={() => setError(null)}
+          onRetry={() => handleReserve()}
+          fallbackMessage="Unable to reserve this gift at this time."
+        />
       )}
 
       <button
         type="submit"
         disabled={loading}
-        className="posh-button-rose w-full py-3.5 px-4 rounded-xl text-sm font-semibold transition-all duration-150 cursor-pointer disabled:opacity-50"
+        className="posh-button-rose w-full py-3.5 px-4 rounded-xl text-sm font-semibold transition-all duration-150 cursor-pointer disabled:opacity-50 min-h-[48px]"
       >
         {loading ? 'Reserving gift...' : 'Confirm gift reservation'}
       </button>
