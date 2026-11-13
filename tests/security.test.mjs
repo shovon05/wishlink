@@ -1,58 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-
-// Test the exact SSRF private IP validation algorithm used in app/api/extract-metadata/route.ts
-function isPrivateOrReservedIP(ip) {
-  // IPv4 checks
-  if (ip === 'localhost') return true
-
-  // Standard loopback
-  if (/^127\./.test(ip)) return true
-
-  // RFC 1918 Private ranges
-  if (/^10\./.test(ip)) return true
-  if (/^192\.168\./.test(ip)) return true
-  if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip)) return true
-
-  // Link-local / Cloud Metadata (AWS, GCP, Azure metadata endpoint: 169.254.169.254)
-  if (/^169\.254\./.test(ip)) return true
-
-  // Carrier-grade NAT
-  if (/^100\.(6[4-9]|[7-9][0-9]|1[0-1][0-9]|12[0-7])\./.test(ip)) return true
-
-  // Current network / Broadcast / Documentation
-  if (/^0\./.test(ip) || /^255\.255\.255\.255$/.test(ip)) return true
-  if (/^192\.0\.2\./.test(ip) || /^198\.51\.100\./.test(ip) || /^203\.0\.113\./.test(ip)) return true
-
-  // IPv6 checks
-  const lower = ip.toLowerCase()
-  if (lower === '::1' || lower === '::' || lower === '0:0:0:0:0:0:0:1') return true
-  if (lower.startsWith('fe80:')) return true // Link-local
-  if (lower.startsWith('fc00:') || lower.startsWith('fd00:')) return true // Unique Local Address (ULA)
-  if (lower.startsWith('::ffff:')) {
-    const mappedIpv4 = lower.slice(7)
-    return isPrivateOrReservedIP(mappedIpv4)
-  }
-
-  return false
-}
-
-// Token hash resolver from fragment or query string
-function resolveTokenFromUrl(hash, search) {
-  if (hash && hash.includes('token=')) {
-    const match = hash.match(/token=([^&]+)/)
-    if (match && match[1]) {
-      return decodeURIComponent(match[1])
-    }
-  }
-  if (search && search.includes('token=')) {
-    const match = search.match(/token=([^&]+)/)
-    if (match && match[1]) {
-      return decodeURIComponent(match[1])
-    }
-  }
-  return null
-}
+import { isPrivateOrReservedIP } from '../lib/network-security.mjs'
+import { resolveTokenFromUrl } from '../lib/token-utils.mjs'
 
 describe('Wishlink Security & Validation Tests', () => {
 
@@ -103,6 +52,16 @@ describe('Wishlink Security & Validation Tests', () => {
       assert.equal(token, 'abc1234567890abcdef')
     })
 
+    it('should extract token when combined with other hash parameters', () => {
+      const token = resolveTokenFromUrl('#view=ticket&token=secret_hex_9988&source=mobile', '')
+      assert.equal(token, 'secret_hex_9988')
+    })
+
+    it('should properly URL-decode complex or percent-encoded tokens', () => {
+      const token = resolveTokenFromUrl('#token=abc%2Bdef%3D123', '')
+      assert.equal(token, 'abc+def=123')
+    })
+
     it('should prioritize fragment over query string to prevent log leakage', () => {
       const token = resolveTokenFromUrl('#token=frag_token', '?token=query_token')
       assert.equal(token, 'frag_token')
@@ -113,9 +72,10 @@ describe('Wishlink Security & Validation Tests', () => {
       assert.equal(token, 'legacy_token')
     })
 
-    it('should return null when token is missing', () => {
-      const token = resolveTokenFromUrl('', '')
-      assert.equal(token, null)
+    it('should return null when token is missing or empty', () => {
+      assert.equal(resolveTokenFromUrl('', ''), null)
+      assert.equal(resolveTokenFromUrl('#other=123', '?foo=bar'), null)
+      assert.equal(resolveTokenFromUrl(undefined, undefined), null)
     })
   })
 

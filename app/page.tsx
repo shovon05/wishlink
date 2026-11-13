@@ -9,8 +9,6 @@ import {
   EyeOff,
   ShoppingBag,
   HelpCircle,
-  CheckCircle2,
-  ExternalLink,
 } from 'lucide-react'
 
 export default async function Home() {
@@ -52,7 +50,7 @@ export default async function Home() {
     {
       step: '03',
       title: 'Friends reserve to prevent duplicates',
-      description: 'When an item is reserved, it locks in real-time. Double-gifting is impossible, and gifters receive your shipping details securely.',
+      description: 'When an item is reserved, it locks in real-time. Double-gifting is impossible, and gifters receive your shipping details securely after your approval.',
     },
   ]
 
@@ -60,7 +58,7 @@ export default async function Home() {
     {
       question: 'How do gifters send items without seeing my personal address?',
       answer:
-        'Your home address is never public. When a friend reserves a gift, we send you a private notification. You approve sharing your address (or allow auto-share with default address), and it is revealed only to that verified gifter via a cryptographically hashed token ticket.',
+        'Your home address is never public. When a friend reserves a gift, we send you a private notification. You choose which destination to approve for that specific gift, and it is revealed only to that verified gifter via a cryptographically hashed token ticket. You can revoke access at any time.',
     },
     {
       question: 'Can I add products from any atelier or country?',
@@ -70,12 +68,12 @@ export default async function Home() {
     {
       question: 'Can I keep reserved gifts a surprise for my celebration?',
       answer:
-        'Yes. You can turn on Spoiler-Free Mode in your dashboard. When active, you will receive delivery notifications to approve shipping without revealing which specific item was picked, keeping the gift a true surprise until you open it!',
+        'Yes. You can turn on Surprise Mode in your dashboard. When active, you will receive delivery notifications to approve shipping without revealing which specific item was picked, keeping the gift a true surprise until you open it!',
     },
     {
       question: 'What if someone reserves an item but doesn’t buy it?',
       answer:
-        'Reservations automatically expire after 14 days unless completed. You can also cancel an inactive reservation with one click from your dashboard activity center to return the item to available status.',
+        'Reservations automatically expire after 14 days unless completed. You can also decline or cancel an inactive reservation with one click from your dashboard activity center to return the item to available status.',
     },
   ]
 
@@ -93,12 +91,19 @@ export default async function Home() {
             </span>
           </Link>
 
-          <nav className="flex items-center gap-3">
+          <nav className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/about"
+              className="text-xs font-semibold text-slate-muted hover:text-ink transition-colors px-2.5 py-1.5 rounded-xl hover:bg-parchment-light/80"
+            >
+              About
+            </Link>
+
             <Link
               href="/demo"
               className="text-xs font-semibold text-slate-muted hover:text-ink hidden sm:inline-flex items-center gap-1.5 transition-colors px-3 py-1.5 rounded-xl hover:bg-parchment-light/80"
             >
-              <span>Explore Demo Registry</span>
+              <span>Explore Demo</span>
             </Link>
 
             {user ? (
@@ -122,7 +127,7 @@ export default async function Home() {
               <div className="flex items-center gap-2 sm:gap-3">
                 <Link
                   href="/login"
-                  className="px-3.5 py-2 text-xs font-semibold text-slate-muted hover:text-ink transition-colors"
+                  className="px-3 py-2 text-xs font-semibold text-slate-muted hover:text-ink transition-colors"
                 >
                   Sign In
                 </Link>
@@ -149,52 +154,43 @@ export default async function Home() {
           <h1 className="text-4xl sm:text-6xl font-serif font-bold text-ink tracking-tight leading-[1.08]">
             Everything you wish for. One private link.
           </h1>
-          <p className="text-base sm:text-lg text-slate-muted leading-relaxed font-sans max-w-xl mx-auto">
-            Curate your registry from any atelier or store worldwide. Share your bespoke link. Friends reserve gifts seamlessly without ever exposing your home address.
+          <p className="text-base sm:text-lg text-slate-muted font-sans font-normal max-w-xl mx-auto leading-relaxed">
+            Create an aesthetic wishlist with items from any shop in the world. Share with confidence—your residential shipping address is disclosed only with your explicit approval.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <Link
             href={user ? '/dashboard' : '/login'}
-            className="w-full sm:w-auto posh-button-rose inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
+            className="w-full sm:w-auto posh-button-primary inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-semibold cursor-pointer shadow-xs min-h-[44px]"
           >
-            <span>{user ? 'Go to my dashboard' : 'Create your free wishlist'}</span>
-            <ArrowRight className="w-4 h-4 stroke-[2.2]" />
+            <span>{user ? 'Enter Wishlist Studio' : 'Create your Wishlink'}</span>
+            <ArrowRight className="w-4 h-4" />
           </Link>
-
           <Link
             href="/demo"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border border-parchment hover:border-caramel/40 text-ink hover:bg-parchment-light/60 px-6 py-3.5 rounded-2xl text-sm font-semibold transition-all shadow-2xs cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border border-parchment hover:border-caramel/40 text-ink hover:bg-parchment-light/60 px-5 py-3.5 rounded-2xl text-sm font-semibold transition-all cursor-pointer min-h-[44px]"
           >
-            <span>See Maya&apos;s Demo Wishlist</span>
-            <ExternalLink className="w-4 h-4 text-caramel" />
+            <EyeOff className="w-4 h-4 text-caramel" />
+            <span>Interactive Demo</span>
           </Link>
         </div>
 
-        <div className="text-xs text-slate-muted flex flex-wrap items-center justify-center gap-2 pt-1 font-medium">
-          <ShieldCheck className="w-4 h-4 text-spruce" />
-          <span>Zero public addresses · Atomic duplicate prevention · Passkeys & Google sign in</span>
-        </div>
-
-        {/* Live Interactive Hero Demo Walkthrough */}
+        {/* Live Interactive Demo Widget */}
         <div className="pt-8">
           <LandingHeroDemo />
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="border-t border-parchment bg-white/80 py-16 sm:py-24">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-xl mx-auto mb-14 space-y-2">
-            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-ribbon">
-              Simple 3-Step Process
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-ink">
-              How Wishlink works
+      {/* How it Works */}
+      <section className="py-16 sm:py-24 border-t border-parchment/60 bg-white/50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
+          <div className="text-center space-y-2 max-w-lg mx-auto">
+            <h2 className="text-xs font-bold text-caramel uppercase tracking-widest font-mono">
+              Designed For Real Gifting
             </h2>
-            <p className="text-sm text-slate-muted">
-              Built for weddings, birthdays, baby showers, holidays, or everyday personal registries.
+            <p className="text-2xl sm:text-3xl font-serif font-bold text-ink">
+              Three simple steps to mindful gifting.
             </p>
           </div>
 
@@ -202,15 +198,15 @@ export default async function Home() {
             {howItWorks.map((item) => (
               <div
                 key={item.step}
-                className="paper-tag rounded-3xl p-6 sm:p-7 space-y-4 hover:border-caramel/30 hover:shadow-md transition-all relative bg-white border border-parchment"
+                className="paper-tag rounded-3xl p-6 sm:p-7 space-y-4 bg-white border border-parchment transition-all hover:border-caramel/40 hover:-translate-y-0.5 md-elevation-1"
               >
-                <div className="w-10 h-10 rounded-2xl bg-mocha text-cotton border border-caramel/30 font-mono font-bold text-sm flex items-center justify-center shadow-xs">
+                <span className="font-serif font-bold text-3xl text-caramel/30 block">
                   {item.step}
-                </div>
+                </span>
                 <h3 className="font-serif font-bold text-lg text-ink">
                   {item.title}
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-muted leading-relaxed">
+                <p className="text-xs text-slate-muted leading-relaxed font-sans">
                   {item.description}
                 </p>
               </div>
@@ -219,124 +215,71 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Supported Stores Section */}
-      <section className="py-16 sm:py-20 border-t border-parchment">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-8">
-          <div className="space-y-2 max-w-lg mx-auto">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-caramel-light border border-caramel/30 text-xs font-semibold text-caramel">
-              <ShoppingBag className="w-3.5 h-3.5 text-caramel" />
-              <span>Universal Compatibility</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-ink">
-              Add gifts from anywhere on the web
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-muted">
-              You are never locked into a single retail ecosystem. Combine your favorites in one sleek list.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto">
+      {/* Store Compatibility Strip */}
+      <section className="py-12 border-t border-parchment/60 bg-cotton">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6 text-center">
+          <p className="text-xs font-bold text-slate-muted uppercase tracking-wider font-mono">
+            Works with any online store worldwide
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
             {supportedStores.map((store) => (
               <div
                 key={store.name}
-                className="p-4 rounded-2xl bg-white border border-parchment text-left shadow-2xs hover:border-caramel/40 transition-all"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-parchment shadow-2xs text-xs font-medium text-ink"
               >
-                <p className="font-semibold text-sm text-ink">{store.name}</p>
-                <p className="text-[11px] text-slate-muted mt-0.5">{store.category}</p>
+                <ShoppingBag className="w-3 h-3 text-caramel" />
+                <span>{store.name}</span>
+                <span className="text-[10px] text-slate-muted/70">({store.category})</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Dedicated Privacy & Security Section */}
-      <section className="py-16 sm:py-20 bg-parchment-light/40 border-t border-parchment">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-spruce-light text-spruce text-xs font-semibold border border-spruce/20">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Zero Address Leaks Guaranteed</span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-serif font-bold text-ink tracking-tight">
-                Privacy is not an afterthought. It&apos;s the entire foundation.
-              </h2>
-              <p className="text-sm text-slate-muted leading-relaxed">
-                Traditional registries publish your home address for the world to see. Wishlink replaces this risk with cryptographic token verification and recipient consent.
+      {/* Privacy Callout */}
+      <section className="py-16 sm:py-20 border-t border-parchment/60 bg-white/70">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="paper-tag rounded-3xl p-8 sm:p-12 border border-parchment bg-white md-elevation-2 flex flex-col md:flex-row items-center gap-8">
+            <div className="w-16 h-16 rounded-2xl bg-spruce-light border border-spruce/30 flex items-center justify-center shrink-0 text-spruce">
+              <ShieldCheck className="w-8 h-8 stroke-[1.8]" />
+            </div>
+            <div className="space-y-2 text-center md:text-left flex-1">
+              <h3 className="text-xl sm:text-2xl font-serif font-bold text-ink">
+                Your residential address stays confidential.
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-muted leading-relaxed">
+                Traditional registries publish your home city and full name to anyone with the link. WishLink uses cryptographically signed tokens and explicit per-request owner consent. Only approved gifters receive delivery directions.
               </p>
-              <ul className="space-y-2 text-xs text-ink/80 pt-2">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-spruce shrink-0" />
-                  <span>Addresses are never returned in public profile API payloads.</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-spruce shrink-0" />
-                  <span>Tokens are hashed with SHA-256 before database storage.</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-spruce shrink-0" />
-                  <span>14-day reservation auto-expiry frees up abandoned gifts.</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-spruce shrink-0" />
-                  <span>Spoiler-Free mode hides item titles from notifications so surprises stay safe.</span>
-                </li>
-              </ul>
-              <div className="pt-2">
-                <Link
-                  href="/privacy"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-caramel hover:text-mocha transition-colors"
-                >
-                  <span>Read our full Privacy Policy</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
             </div>
-
-            <div className="paper-tag rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm bg-white border border-parchment">
-              <div className="flex items-center gap-3 border-b border-parchment pb-4">
-                <div className="w-10 h-10 rounded-xl bg-spruce-light text-spruce flex items-center justify-center">
-                  <EyeOff className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-sm text-ink">Recipient-Controlled Disclosures</h4>
-                  <p className="text-xs text-slate-muted">1-to-1 secure delivery handoffs</p>
-                </div>
-              </div>
-              <div className="space-y-3 text-xs text-slate-muted leading-relaxed">
-                <p>
-                  1. A gifter reserves an item on your public link.
-                </p>
-                <p>
-                  2. You receive an in-app ping and decide whether to share your home, office, or P.O. box.
-                </p>
-                <p>
-                  3. If you enable &ldquo;Auto-share default address&rdquo;, verified gifters receive it instantly, while the general public still sees zero address data.
-                </p>
-              </div>
-            </div>
+            <Link
+              href="/privacy"
+              className="posh-button-primary shrink-0 px-5 py-3 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 min-h-[44px]"
+            >
+              <span>Our Privacy Model</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section className="py-16 sm:py-24 border-t border-parchment">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-10">
+      {/* Frequently Asked Questions */}
+      <section className="py-16 sm:py-24 border-t border-parchment/60 bg-cotton">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-10">
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-caramel-light border border-caramel/30 text-xs font-semibold text-caramel">
-              <HelpCircle className="w-3.5 h-3.5 text-caramel" />
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-caramel font-mono uppercase tracking-widest">
+              <HelpCircle className="w-3.5 h-3.5" />
               <span>Questions & Answers</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-serif font-bold text-ink">
-              Frequently asked questions
+              Everything you need to know
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {faqs.map((faq) => (
+          <div className="space-y-4">
+            {faqs.map((faq, idx) => (
               <div
-                key={faq.question}
-                className="paper-tag rounded-2xl p-5 sm:p-6 space-y-2.5 bg-white border border-parchment hover:border-caramel/30 transition-colors"
+                key={idx}
+                className="paper-tag rounded-2xl p-5 sm:p-6 bg-white border border-parchment space-y-2 md-elevation-1"
               >
                 <h3 className="font-serif font-bold text-base text-ink leading-snug">
                   {faq.question}
@@ -365,7 +308,7 @@ export default async function Home() {
           <div className="pt-2 relative z-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href={user ? '/dashboard' : '/login'}
-              className="w-full sm:w-auto posh-button-primary inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-semibold cursor-pointer shadow-xs"
+              className="w-full sm:w-auto posh-button-primary inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-semibold cursor-pointer shadow-xs min-h-[44px]"
             >
               <span>{user ? 'Open Dashboard' : 'Claim your Wishlink now'}</span>
               <ArrowRight className="w-4 h-4" />
@@ -373,7 +316,7 @@ export default async function Home() {
 
             <Link
               href="/demo"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border border-parchment hover:border-caramel/40 text-ink hover:bg-parchment-light/60 px-5 py-3.5 rounded-2xl text-sm font-semibold transition-all cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border border-parchment hover:border-caramel/40 text-ink hover:bg-parchment-light/60 px-5 py-3.5 rounded-2xl text-sm font-semibold transition-all cursor-pointer min-h-[44px]"
             >
               <span>View Interactive Demo</span>
             </Link>
@@ -391,6 +334,7 @@ export default async function Home() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+            <Link href="/about" className="hover:text-ink transition-colors">About</Link>
             <Link href="/demo" className="hover:text-ink transition-colors">Sample Registry</Link>
             <Link href="/privacy" className="hover:text-ink transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-ink transition-colors">Terms of Service</Link>

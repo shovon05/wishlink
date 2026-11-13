@@ -2,10 +2,10 @@
 
 import { useEffect, useState, use } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ShieldCheck, MapPin, Copy, Check, Clock, RefreshCw, Home, Lock } from 'lucide-react'
 import MaterialErrorBanner from '@/components/MaterialErrorBanner'
+import { resolveTokenFromUrl } from '@/lib/token-utils.mjs'
 
 type Props = {
   params: Promise<{ reservationId: string }>
@@ -13,7 +13,6 @@ type Props = {
 
 export default function ReservationTrackerPage({ params }: Props) {
   const { reservationId } = use(params)
-  const searchParams = useSearchParams()
   const supabase = createClient()
 
   const [token, setToken] = useState<string | null>(null)
@@ -59,22 +58,14 @@ export default function ReservationTrackerPage({ params }: Props) {
       let resolvedToken: string | null = null
 
       if (typeof window !== 'undefined') {
-        const hash = window.location.hash
-        if (hash && hash.includes('token=')) {
-          const match = hash.match(/token=([^&]+)/)
-          if (match && match[1]) {
-            resolvedToken = decodeURIComponent(match[1])
-          }
-        }
-      }
-
-      if (!resolvedToken) {
-        resolvedToken = searchParams.get('token')
+        resolvedToken = resolveTokenFromUrl(window.location.hash, window.location.search)
       }
 
       if (!resolvedToken) {
         if (!ignore) {
-          setError('Access token is missing from this link. Please use the complete reservation URL provided when you reserved the gift.')
+          setError(
+            'Access token is missing from this link. Please use the complete reservation URL provided when you reserved the gift.'
+          )
           setLoading(false)
         }
         return
@@ -119,7 +110,7 @@ export default function ReservationTrackerPage({ params }: Props) {
     return () => {
       ignore = true
     }
-  }, [reservationId, searchParams, supabase])
+  }, [reservationId, supabase])
 
   const handleCopyAddress = async () => {
     if (!address) return

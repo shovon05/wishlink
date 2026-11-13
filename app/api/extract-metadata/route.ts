@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as cheerio from 'cheerio'
 import dns from 'dns/promises'
-import net from 'net'
+import { isRestrictedIP } from '@/lib/network-security.mjs'
 
 const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute
 const MAX_REQUESTS = 25
@@ -10,73 +10,6 @@ const FETCH_TIMEOUT_MS = 6000 // 6 seconds
 const MAX_REDIRECTS = 3
 
 const rateLimitMap = new Map<string, { count: number; timestamp: number }>()
-
-/**
- * Validates whether an IP address belongs to private, loopback, link-local,
- * cloud metadata, or reserved ranges (both IPv4 and IPv6).
- */
-function isRestrictedIP(ip: string): boolean {
-  if (!ip) return true
-
-  // Normalize IPv4-mapped IPv6 (e.g. ::ffff:127.0.0.1 -> 127.0.0.1)
-  const ipv4Mapped = ip.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i)
-  const checkIP = ipv4Mapped ? ipv4Mapped[1] : ip
-
-  const version = net.isIP(checkIP)
-  if (version === 0) return true // Invalid IP address
-
-  if (version === 4) {
-    const parts = checkIP.split('.').map(Number)
-    const [b0, b1] = parts
-
-    // 0.0.0.0/8 (Current network)
-    if (b0 === 0) return true
-    // 10.0.0.0/8 (Private)
-    if (b0 === 10) return true
-    // 127.0.0.0/8 (Loopback)
-    if (b0 === 127) return true
-    // 100.64.0.0/10 (Carrier-grade NAT)
-    if (b0 === 100 && b1 >= 64 && b1 <= 127) return true
-    // 169.254.0.0/16 (Link-local / Cloud metadata including 169.254.169.254)
-    if (b0 === 169 && b1 === 254) return true
-    // 172.16.0.0/12 (Private)
-    if (b0 === 172 && b1 >= 16 && b1 <= 31) return true
-    // 192.0.0.0/24 (IETF Protocol Assignments)
-    if (b0 === 192 && b1 === 0 && parts[2] === 0) return true
-    // 192.0.2.0/24 (TEST-NET-1)
-    if (b0 === 192 && b1 === 0 && parts[2] === 2) return true
-    // 192.168.0.0/16 (Private)
-    if (b0 === 192 && b1 === 168) return true
-    // 198.51.100.0/24 (TEST-NET-2)
-    if (b0 === 198 && b1 === 51 && parts[2] === 100) return true
-    // 203.0.113.0/24 (TEST-NET-3)
-    if (b0 === 203 && b1 === 0 && parts[2] === 113) return true
-    // 224.0.0.0/4 (Multicast)
-    if (b0 >= 224 && b0 <= 239) return true
-    // 240.0.0.0/4 (Reserved)
-    if (b0 >= 240) return true
-
-    return false
-  }
-
-  if (version === 6) {
-    const lower = checkIP.toLowerCase()
-    // ::1 (Loopback)
-    if (lower === '::1' || lower === '0:0:0:0:0:0:0:1') return true
-    // :: (Unspecified)
-    if (lower === '::' || lower === '0:0:0:0:0:0:0:0') return true
-    // fc00::/7 (Unique local)
-    if (/^f[cd][0-9a-f]{2}:/i.test(lower)) return true
-    // fe80::/10 (Link-local)
-    if (/^fe[89ab][0-9a-f]:/i.test(lower)) return true
-    // 2001:db8::/32 (Documentation)
-    if (/^2001:db8:/i.test(lower)) return true
-
-    return false
-  }
-
-  return true
-}
 
 /**
  * Validates a target hostname against DNS rebinding and private IP access.
@@ -88,14 +21,17 @@ async function validateHostname(hostname: string): Promise<boolean> {
   }
 
   try {
-    const results = await dns.lookup(normalized, { all: true })
-    if (!results || results.length === 0) return false
+    const addresses = await dns.lookup(normalized, { all: true })
+    if (!addresses || addresses.length === 0) {
+      return false
+    }
 
-    for (const record of results) {
-      if (isRestrictedIP(record.address)) {
+    for (const entry of addresses) {
+      if (isRestrictedIP(entry.address)) {
         return false
       }
     }
+
     return true
   } catch {
     return false
@@ -103,308 +39,308 @@ async function validateHostname(hostname: string): Promise<boolean> {
 }
 
 /**
- * Follows HTTP redirects safely, validating the destination host at every hop.
+ * Validates whether an HTTP/HTTPS URL is safe to fetch (anti-SSRF, DNS resolution, valid protocol).
  */
-async function fetchSafeHtml(targetUrl: URL): Promise<string | null> {
-  let currentUrl = targetUrl
+async function isSafeUrl(rawUrl: string): Promise<{ valid: boolean; error?: string; parsedUrl?: URL }> {
+  try {
+    const parsed = new URL(rawUrl)
 
-  for (let hop = 0; hop < MAX_REDIRECTS; hop++) {
-    const isValid = await validateHostname(currentUrl.hostname)
-    if (!isValid) return null
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return { valid: false, error: 'Only HTTP and HTTPS URLs are supported.' }
+    }
+
+    // Direct IP or Hostname checks
+    const hostname = parsed.hostname.toLowerCase()
+
+    // Block numeric or local patterns
+    if (isRestrictedIP(hostname)) {
+      return { valid: false, error: 'Target host is restricted or invalid.' }
+    }
+
+    const isDomainSafe = await validateHostname(hostname)
+    if (!isDomainSafe) {
+      return { valid: false, error: 'Domain resolves to a restricted or private address.' }
+    }
+
+    return { valid: true, parsedUrl: parsed }
+  } catch {
+    return { valid: false, error: 'Malformed URL provided.' }
+  }
+}
+
+/**
+ * Safely fetches HTML while following redirects with full re-validation at each hop.
+ */
+async function fetchSafeHtml(initialUrl: string): Promise<string> {
+  let currentUrl = initialUrl
+  let redirectsCount = 0
+
+  while (redirectsCount <= MAX_REDIRECTS) {
+    const safety = await isSafeUrl(currentUrl)
+    if (!safety.valid || !safety.parsedUrl) {
+      throw new Error(safety.error || 'Destination URL failed security validation.')
+    }
 
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
 
     let response: Response
     try {
-      response = await fetch(currentUrl.toString(), {
+      response = await fetch(currentUrl, {
         signal: controller.signal,
-        redirect: 'manual',
+        redirect: 'manual', // Enforce manual redirect handling to re-validate destination IP
         headers: {
           'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.9',
         },
       })
-    } catch {
+    } finally {
       clearTimeout(timer)
-      return null
     }
-
-    clearTimeout(timer)
 
     // Handle redirects manually
-    if ([301, 302, 303, 307, 308].includes(response.status)) {
+    if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('location')
-      if (!location) return null
-
-      try {
-        currentUrl = new URL(location, currentUrl)
-        if (!['http:', 'https:'].includes(currentUrl.protocol)) return null
-        continue
-      } catch {
-        return null
+      if (!location) {
+        throw new Error('Redirect returned with missing location header.')
       }
+
+      // Resolve relative redirect against base URL
+      currentUrl = new URL(location, currentUrl).toString()
+      redirectsCount++
+      continue
     }
 
-    if (!response.ok) return null
+    if (!response.ok) {
+      throw new Error(`Failed to load URL (HTTP ${response.status})`)
+    }
 
     const contentType = response.headers.get('content-type') || ''
     if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
-      return null
+      throw new Error('Target URL did not return HTML content.')
     }
 
-    // Stream and enforce response size cap
-    if (!response.body) return null
-    const reader = response.body.getReader()
+    // Stream and enforce MAX_RESPONSE_SIZE
+    const reader = response.body?.getReader()
+    if (!reader) {
+      throw new Error('Unable to read response body.')
+    }
+
     const chunks: Uint8Array[] = []
-    let receivedBytes = 0
+    let totalBytes = 0
 
-    try {
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        if (value) {
-          receivedBytes += value.length
-          if (receivedBytes > MAX_RESPONSE_SIZE) {
-            await reader.cancel()
-            return null
-          }
-          chunks.push(value)
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      if (value) {
+        totalBytes += value.length
+        if (totalBytes > MAX_RESPONSE_SIZE) {
+          reader.cancel()
+          throw new Error('Response size exceeded 2MB limit.')
         }
+        chunks.push(value)
       }
-    } catch {
-      return null
     }
 
-    const totalBuffer = new Uint8Array(receivedBytes)
-    let offset = 0
-    for (const chunk of chunks) {
-      totalBuffer.set(chunk, offset)
-      offset += chunk.length
-    }
-
-    return new TextDecoder('utf-8').decode(totalBuffer)
+    // Combine chunks
+    const buffer = Buffer.concat(chunks)
+    return buffer.toString('utf-8')
   }
 
-  return null
-}
-
-/**
- * Extracts product metadata using JSON-LD, OpenGraph, microdata, and heuristic fallbacks.
- */
-function extractProductData(html: string) {
-  const $ = cheerio.load(html)
-
-  let title: string | null = null
-  let image: string | null = null
-  let description: string | null = null
-  let price: string | null = null
-  let currency: string = 'USD'
-
-  // Strategy 1: Schema.org Product JSON-LD
-  $('script[type="application/ld+json"]').each((_, elem) => {
-    try {
-      const text = $(elem).text().trim()
-      if (!text) return
-      const json = JSON.parse(text)
-      const graph = Array.isArray(json) ? json : json['@graph'] || [json]
-
-      for (const item of graph) {
-        if (item['@type'] === 'Product' || (Array.isArray(item['@type']) && item['@type'].includes('Product'))) {
-          if (!title && item.name) title = String(item.name).trim()
-          if (!description && item.description) description = String(item.description).trim()
-          if (!image) {
-            if (typeof item.image === 'string') image = item.image
-            else if (Array.isArray(item.image) && item.image[0]) image = typeof item.image[0] === 'string' ? item.image[0] : item.image[0].url
-            else if (item.image?.url) image = item.image.url
-          }
-
-          const offers = Array.isArray(item.offers) ? item.offers[0] : item.offers
-          if (offers && !price) {
-            const rawPrice = offers.price ?? offers.lowPrice ?? offers.highPrice
-            if (rawPrice !== undefined) {
-              price = String(rawPrice).trim()
-            }
-            if (offers.priceCurrency) {
-              currency = String(offers.priceCurrency).toUpperCase().trim()
-            }
-          }
-        }
-      }
-    } catch {
-      // Ignore malformed JSON-LD
-    }
-  })
-
-  // Strategy 2: OpenGraph & Twitter metadata
-  if (!title) {
-    title =
-      $('meta[property="og:title"]').attr('content') ||
-      $('meta[name="twitter:title"]').attr('content') ||
-      $('title').text().trim() ||
-      null
-  }
-
-  if (!image) {
-    image =
-      $('meta[property="og:image:secure_url"]').attr('content') ||
-      $('meta[property="og:image"]').attr('content') ||
-      $('meta[name="twitter:image"]').attr('content') ||
-      $('link[rel="image_src"]').attr('href') ||
-      null
-  }
-
-  if (!description) {
-    description =
-      $('meta[property="og:description"]').attr('content') ||
-      $('meta[name="twitter:description"]').attr('content') ||
-      $('meta[name="description"]').attr('content') ||
-      null
-  }
-
-  // Strategy 3: OpenGraph & Schema price
-  if (!price) {
-    const ogPrice =
-      $('meta[property="product:price:amount"]').attr('content') ||
-      $('meta[property="og:price:amount"]').attr('content') ||
-      $('meta[itemprop="price"]').attr('content') ||
-      null
-
-    if (ogPrice) {
-      price = ogPrice.trim()
-    }
-  }
-
-  const ogCurrency =
-    $('meta[property="product:price:currency"]').attr('content') ||
-    $('meta[property="og:price:currency"]').attr('content') ||
-    $('meta[itemprop="priceCurrency"]').attr('content') ||
-    null
-
-  if (ogCurrency) {
-    currency = ogCurrency.toUpperCase().trim()
-  }
-
-  // Sanitize title (remove redundant brand suffixes like " - Amazon.com")
-  if (title) {
-    title = title.replace(/\s*[|–—]\s*(Amazon\.com|Etsy|Target|Walmart|Best Buy|Shopify).*$/i, '').trim()
-  }
-
-  // Format display price
-  let displayPrice: string | null = null
-  if (price) {
-    const numeric = parseFloat(price.replace(/[^0-9.]/g, ''))
-    if (!isNaN(numeric) && numeric > 0) {
-      const symbols: Record<string, string> = { USD: '$', EUR: '€', GBP: '£', BDT: '৳', CAD: 'CA$', AUD: 'AU$' }
-      const sym = symbols[currency] || `${currency} `
-      displayPrice = `${sym}${numeric.toFixed(2)}`
-    }
-  }
-
-  return {
-    title,
-    image,
-    description: description ? description.slice(0, 300) : null,
-    price,
-    currency,
-    displayPrice,
-  }
+  throw new Error('Too many redirects.')
 }
 
 export async function POST(req: Request) {
-  try {
-    // 1. IP-based rate limiting (protection against spam)
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown'
-    const now = Date.now()
-    const rateData = rateLimitMap.get(ip)
+  // 1. IP Rate Limiting
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    req.headers.get('x-real-ip') ||
+    '127.0.0.1'
 
-    if (rateData) {
-      if (now - rateData.timestamp < RATE_LIMIT_WINDOW) {
-        if (rateData.count >= MAX_REQUESTS) {
-          return NextResponse.json(
-            { success: false, error: 'rate_limited', message: 'Too many requests. Please wait a minute.' },
-            { status: 429 }
-          )
-        }
-        rateData.count++
-      } else {
-        rateLimitMap.set(ip, { count: 1, timestamp: now })
+  const now = Date.now()
+  const rateData = rateLimitMap.get(ip)
+
+  if (rateData && now - rateData.timestamp < RATE_LIMIT_WINDOW) {
+    if (rateData.count >= MAX_REQUESTS) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait a minute before analyzing more links.' },
+        { status: 429 }
+      )
+    }
+    rateData.count++
+  } else {
+    rateLimitMap.set(ip, { count: 1, timestamp: now })
+  }
+
+  // Periodic cleanup of stale rate limits
+  if (rateLimitMap.size > 2000) {
+    for (const [key, value] of rateLimitMap.entries()) {
+      if (now - value.timestamp > RATE_LIMIT_WINDOW) {
+        rateLimitMap.delete(key)
       }
-    } else {
-      rateLimitMap.set(ip, { count: 1, timestamp: now })
+    }
+  }
+
+  try {
+    const body = await req.json().catch(() => null)
+    if (!body || typeof body.url !== 'string') {
+      return NextResponse.json({ error: 'Valid URL is required.' }, { status: 400 })
     }
 
-    // 2. Parse & validate request URL
-    const body = await req.json()
-    const { url } = body
-
-    if (!url || typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
-      return NextResponse.json({
-        success: false,
-        error: 'invalid_url',
-        message: 'Please provide a valid web URL starting with https:// or http://',
-        title: null,
-        image: null,
-        description: null,
-        price: null,
-        currency: 'USD',
-        displayPrice: null,
-      })
+    const targetUrl = body.url.trim()
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      return NextResponse.json(
+        { error: 'Invalid URL scheme. Must begin with http:// or https://' },
+        { status: 400 }
+      )
     }
 
-    let parsedUrl: URL
-    try {
-      parsedUrl = new URL(url)
-    } catch {
-      return NextResponse.json({
-        success: false,
-        error: 'invalid_url',
-        message: 'Malformed URL provided.',
-        title: null,
-        image: null,
-        description: null,
-        price: null,
-        currency: 'USD',
-        displayPrice: null,
-      })
+    const html = await fetchSafeHtml(targetUrl)
+    const $ = cheerio.load(html)
+
+    // Meta extraction algorithms
+    let title: string | null = null
+    let image_url: string | null = null
+    let price: string | null = null
+
+    // 1. Extract Title
+    title =
+      $('meta[property="og:title"]').attr('content') ||
+      $('meta[name="twitter:title"]').attr('content') ||
+      $('h1').first().text().trim() ||
+      $('title').text().trim() ||
+      null
+
+    if (title) {
+      // Clean up common store suffixes like " | Amazon", " - Nike Store"
+      title = title.split(/\s*[-–—|]\s*(Amazon|eBay|Nike|Etsy|Walmart|Target|AliExpress)/i)[0].trim()
+      if (title.length > 200) {
+        title = title.slice(0, 200) + '...'
+      }
     }
 
-    // 3. SSRF-safe fetch with streaming size cap
-    const html = await fetchSafeHtml(parsedUrl)
-    if (!html) {
-      return NextResponse.json({
-        success: false,
-        error: 'scrape_fallback',
-        message: 'Unable to auto-extract details from this store. You can enter the product information manually.',
-        title: null,
-        image: null,
-        description: null,
-        price: null,
-        currency: 'USD',
-        displayPrice: null,
-      })
+    // 2. Extract Image
+    const rawImage =
+      $('meta[property="og:image:secure_url"]').attr('content') ||
+      $('meta[property="og:image"]').attr('content') ||
+      $('meta[name="twitter:image"]').attr('content') ||
+      $('meta[name="twitter:image:src"]').attr('content') ||
+      $('link[rel="image_src"]').attr('href') ||
+      null
+
+    if (rawImage) {
+      try {
+        // Resolve relative image URLs against target URL
+        const resolvedImage = new URL(rawImage, targetUrl).toString()
+        if (resolvedImage.startsWith('http://') || resolvedImage.startsWith('https://')) {
+          image_url = resolvedImage
+        }
+      } catch {
+        image_url = null
+      }
     }
 
-    // 4. Extract rich product data
-    const extracted = extractProductData(html)
+    // Fallback: search DOM for primary product image if meta tags didn't provide one
+    if (!image_url) {
+      const imgCandidate =
+        $('img#landingImage').attr('src') ||
+        $('img[data-old-hires]').attr('data-old-hires') ||
+        $('img[data-a-dynamic-image]').attr('src') ||
+        $('img.product-image').attr('src') ||
+        $('img[itemprop="image"]').attr('src')
+
+      if (imgCandidate) {
+        try {
+          const resolved = new URL(imgCandidate, targetUrl).toString()
+          if (resolved.startsWith('http://') || resolved.startsWith('https://')) {
+            image_url = resolved
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    // 3. Extract Price
+    let rawPrice =
+      $('meta[property="product:price:amount"]').attr('content') ||
+      $('meta[property="og:price:amount"]').attr('content') ||
+      $('[itemprop="price"]').attr('content') ||
+      $('[itemprop="price"]').text().trim() ||
+      $('.priceToPay .a-price-whole').first().text().trim() ||
+      $('.a-price .a-offscreen').first().text().trim() ||
+      null
+
+    const rawCurrency =
+      $('meta[property="product:price:currency"]').attr('content') ||
+      $('meta[property="og:price:currency"]').attr('content') ||
+      $('[itemprop="priceCurrency"]').attr('content') ||
+      ''
+
+    if (rawPrice) {
+      // Clean price string
+      rawPrice = rawPrice.replace(/[^\d.,]/g, '').trim()
+      if (rawPrice) {
+        const currencySymbol = rawCurrency ? `${rawCurrency.toUpperCase()} ` : ''
+        price = `${currencySymbol}${rawPrice}`
+      }
+    }
+
+    // JSON-LD Structured Data Extraction (High-fidelity product schema fallback)
+    $('script[type="application/ld+json"]').each((_, elem) => {
+      try {
+        const text = $(elem).text()
+        if (!text) return
+
+        const json = JSON.parse(text)
+        const items = Array.isArray(json) ? json : [json]
+
+        for (const item of items) {
+          if (
+            item['@type'] === 'Product' ||
+            item['@type'] === 'IndividualProduct' ||
+            (Array.isArray(item['@type']) && item['@type'].includes('Product'))
+          ) {
+            if (!title && item.name) {
+              title = String(item.name).trim()
+            }
+            if (!image_url && item.image) {
+              const imgVal = Array.isArray(item.image) ? item.image[0] : item.image
+              const imgStr = typeof imgVal === 'string' ? imgVal : imgVal?.url
+              if (imgStr) {
+                try {
+                  image_url = new URL(imgStr, targetUrl).toString()
+                } catch {
+                  // ignore
+                }
+              }
+            }
+            if (!price && item.offers) {
+              const offers = Array.isArray(item.offers) ? item.offers[0] : item.offers
+              if (offers && offers.price) {
+                const cur = offers.priceCurrency ? `${offers.priceCurrency} ` : ''
+                price = `${cur}${offers.price}`
+              }
+            }
+          }
+        }
+      } catch {
+        // Ignore unparseable JSON-LD blocks
+      }
+    })
 
     return NextResponse.json({
-      success: true,
-      ...extracted,
+      title: title || '',
+      image_url: image_url || '',
+      price: price || '',
     })
-  } catch {
-    return NextResponse.json({
-      success: false,
-      error: 'server_error',
-      message: 'Failed to extract metadata. You can enter details manually.',
-      title: null,
-      image: null,
-      description: null,
-      price: null,
-      currency: 'USD',
-      displayPrice: null,
-    })
+  } catch (err: unknown) {
+    const error = err as Error
+    return NextResponse.json(
+      { error: error?.message || 'Failed to extract product details from URL.' },
+      { status: 422 }
+    )
   }
 }

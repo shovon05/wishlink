@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import NotificationBell from '@/components/NotificationBell'
 import MyGiftReservations from '@/components/MyGiftReservations'
-import { Gift, ExternalLink, MapPin, Bell, ShieldCheck, ListOrdered, LogOut } from 'lucide-react'
+import { Gift, ExternalLink, MapPin, Bell, ShieldCheck, ListOrdered, LogOut, Home } from 'lucide-react'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -29,7 +29,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <header className="border-b border-parchment bg-white/95 backdrop-blur-md sticky top-0 z-30 shadow-2xs">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 sm:gap-4">
-            <Link href="/dashboard" className="flex items-center gap-2.5 group">
+            {/* Logo routes to product Home / (Hard requirement: Home from everywhere) */}
+            <Link href="/" className="flex items-center gap-2.5 group" title="Wishlink Home">
               <div className="w-8 h-8 rounded-xl bg-mocha text-cotton flex items-center justify-center shadow-xs border border-caramel/20 group-hover:scale-105 transition-transform">
                 <Gift className="w-4 h-4 text-blush stroke-[2.2]" />
               </div>
@@ -94,6 +95,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="border-t border-parchment/60 bg-cotton/60 backdrop-blur-xs">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 flex items-center gap-1 sm:gap-2 overflow-x-auto py-2 scrollbar-none">
             <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-muted hover:text-ink hover:bg-white transition-all shrink-0 min-h-[36px]"
+            >
+              <Home className="w-3.5 h-3.5 text-caramel" />
+              <span>Home</span>
+            </Link>
+
+            <Link
               href="/dashboard"
               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-ink hover:bg-white hover:shadow-2xs transition-all shrink-0 min-h-[36px]"
             >
@@ -139,29 +148,36 @@ export default async function DashboardLayout({ children }: { children: React.Re
         className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-parchment px-2 py-1.5 flex items-center justify-around md-elevation-3"
       >
         <Link 
+          href="/" 
+          className="flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-slate-muted hover:text-ink p-1.5 min-h-[48px] min-w-[56px] rounded-xl active:bg-parchment-light transition-colors"
+        >
+          <Home className="w-4 h-4 text-caramel" />
+          <span>Home</span>
+        </Link>
+        <Link 
           href="/dashboard" 
-          className="flex flex-col items-center justify-center gap-1 text-[10px] font-semibold text-ink p-2 min-h-[48px] min-w-[64px] rounded-xl active:bg-parchment-light transition-colors"
+          className="flex flex-col items-center justify-center gap-1 text-[10px] font-semibold text-ink p-1.5 min-h-[48px] min-w-[56px] rounded-xl active:bg-parchment-light transition-colors"
         >
           <ListOrdered className="w-4 h-4 text-caramel" />
           <span>Wishlist</span>
         </Link>
         <Link 
           href="/dashboard/addresses" 
-          className="flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-slate-muted hover:text-ink p-2 min-h-[48px] min-w-[64px] rounded-xl active:bg-parchment-light transition-colors"
+          className="flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-slate-muted hover:text-ink p-1.5 min-h-[48px] min-w-[56px] rounded-xl active:bg-parchment-light transition-colors"
         >
           <MapPin className="w-4 h-4" />
           <span>Addresses</span>
         </Link>
         <Link 
           href="/dashboard/notifications" 
-          className="flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-slate-muted hover:text-ink p-2 min-h-[48px] min-w-[64px] rounded-xl active:bg-parchment-light transition-colors"
+          className="flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-slate-muted hover:text-ink p-1.5 min-h-[48px] min-w-[56px] rounded-xl active:bg-parchment-light transition-colors"
         >
           <Bell className="w-4 h-4" />
           <span>Requests</span>
         </Link>
         <Link 
           href="/dashboard/security" 
-          className="flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-slate-muted hover:text-ink p-2 min-h-[48px] min-w-[64px] rounded-xl active:bg-parchment-light transition-colors"
+          className="flex flex-col items-center justify-center gap-1 text-[10px] font-medium text-slate-muted hover:text-ink p-1.5 min-h-[48px] min-w-[56px] rounded-xl active:bg-parchment-light transition-colors"
         >
           <ShieldCheck className="w-4 h-4" />
           <span>Security</span>

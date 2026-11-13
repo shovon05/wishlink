@@ -147,18 +147,19 @@ export default function NotificationsPage() {
     }
   }, [userId, supabase])
 
-  const handleShareAddress = async () => {
+  // Consent Protocol: Atomic Server-Side Approval (WL-PRIV-002)
+  const handleApproveDisclosure = async () => {
     if (!shareModalResId || !selectedAddressId) return
     setActionError(null)
 
     try {
-      const { error: updateError } = await supabase
-        .from('gift_reservations')
-        .update({ shared_address_id: selectedAddressId })
-        .eq('id', shareModalResId)
+      const { error: approveError } = await supabase.rpc('approve_gift_disclosure', {
+        p_reservation_id: shareModalResId,
+        p_address_id: selectedAddressId,
+      })
 
-      if (updateError) {
-        setActionError(updateError)
+      if (approveError) {
+        setActionError(approveError)
         return
       }
 
@@ -177,6 +178,70 @@ export default function NotificationsPage() {
       setShareModalResId(null)
     } catch (err) {
       setActionError(err)
+    }
+  }
+
+  // Revoke Address Disclosure (WL-PRIV-002)
+  const handleRevokeDisclosure = async (reservationId: string) => {
+    if (confirm('Revoke access to your delivery address? The gifter will no longer be able to view your destination.')) {
+      setActionError(null)
+      try {
+        const { error: revokeError } = await supabase.rpc('revoke_gift_disclosure', {
+          p_reservation_id: reservationId,
+        })
+
+        if (revokeError) {
+          setActionError(revokeError)
+          return
+        }
+
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.reservation_id === reservationId
+              ? {
+                  ...n,
+                  gift_reservations: n.gift_reservations
+                    ? { ...n.gift_reservations, shared_address_id: null }
+                    : undefined,
+                }
+              : n
+          )
+        )
+      } catch (err) {
+        setActionError(err)
+      }
+    }
+  }
+
+  // Decline Request (WL-PRIV-002)
+  const handleDeclineRequest = async (reservationId: string) => {
+    if (confirm('Decline this gift request? The item will be made available again on your public wishlist.')) {
+      setActionError(null)
+      try {
+        const { error: declineError } = await supabase.rpc('decline_gift_reservation', {
+          p_reservation_id: reservationId,
+        })
+
+        if (declineError) {
+          setActionError(declineError)
+          return
+        }
+
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.reservation_id === reservationId
+              ? {
+                  ...n,
+                  gift_reservations: n.gift_reservations
+                    ? { ...n.gift_reservations, status: 'cancelled' }
+                    : undefined,
+                }
+              : n
+          )
+        )
+      } catch (err) {
+        setActionError(err)
+      }
     }
   }
 
@@ -219,7 +284,7 @@ export default function NotificationsPage() {
           Gifting Requests & Activity
         </h1>
         <p className="text-xs sm:text-sm text-slate-muted mt-0.5">
-          Manage reserved gifts and choose which delivery address to share with gifters.
+          Review incoming gift requests and decide which delivery address to approve for each gifter.
         </p>
       </div>
 
@@ -242,7 +307,7 @@ export default function NotificationsPage() {
           </div>
           <h3 className="text-base font-serif font-bold text-ink">No gift activity yet</h3>
           <p className="text-xs text-slate-muted max-w-sm mx-auto leading-relaxed">
-            When someone reserves an item from your public registry, you will be notified here to safely share your delivery address.
+            When someone reserves an item from your public wishlist, you will be notified here to review their request and approve a delivery destination.
           </p>
         </div>
       ) : (
@@ -291,7 +356,7 @@ export default function NotificationsPage() {
                           </span>
                         )}
                         <p className="font-serif font-bold text-sm text-ink truncate">
-                          {res?.is_anonymous ? 'A gracious guest' : res?.gifter_contact} reserved a gift!
+                          {res?.is_anonymous ? 'Anonymous gifter' : res?.gifter_contact} requested to send this gift
                         </p>
                       </div>
                       <span className="text-[11px] text-slate-muted font-mono">
@@ -303,7 +368,7 @@ export default function NotificationsPage() {
                       {surpriseMode ? (
                         <span className="inline-flex items-center gap-1.5 text-caramel font-medium">
                           <EyeOff className="w-3.5 h-3.5 text-caramel shrink-0" />
-                          <span>A gift on your wishlist (title protected by Spoiler-Free Mode)</span>
+                          <span>A gift on your wishlist (title protected by Surprise Mode)</span>
                         </span>
                       ) : (
                         <span>Item: &ldquo;{item?.title || 'Untitled item'}&rdquo;</span>
@@ -314,27 +379,46 @@ export default function NotificationsPage() {
                     {res?.status === 'active' && (
                       <div className="mt-3.5 pt-3 border-t border-parchment flex flex-wrap items-center justify-between gap-3">
                         {!res.shared_address_id ? (
-                          <button
-                            onClick={() => setShareModalResId(res.id)}
-                            type="button"
-                            className="posh-button-primary inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer shadow-xs min-h-[40px]"
-                          >
-                            <MapPin className="w-3.5 h-3.5 text-blush" />
-                            <span>Share delivery address</span>
-                          </button>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={() => setShareModalResId(res.id)}
+                              type="button"
+                              className="posh-button-primary inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer shadow-xs min-h-[40px]"
+                            >
+                              <MapPin className="w-3.5 h-3.5 text-blush" />
+                              <span>Approve and share</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeclineRequest(res.id)}
+                              type="button"
+                              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-muted hover:text-error hover:bg-rose-50 border border-parchment transition-colors cursor-pointer min-h-[40px]"
+                            >
+                              Decline request
+                            </button>
+                          </div>
                         ) : (
-                          <div className="flex flex-wrap items-center gap-3">
-                            <span className="text-spruce text-xs font-semibold inline-flex items-center gap-1.5 bg-spruce-light px-3 py-1.5 rounded-full border border-spruce/30">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>Address shared</span>
-                            </span>
+                          <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+                            <div className="flex items-center gap-2">
+                              <span className="text-spruce text-xs font-semibold inline-flex items-center gap-1.5 bg-spruce-light px-3 py-1.5 rounded-full border border-spruce/30">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Address approved</span>
+                              </span>
+                              <button
+                                onClick={() => handleRevokeDisclosure(res.id)}
+                                type="button"
+                                className="text-[11px] font-semibold text-slate-muted hover:text-error underline cursor-pointer py-1"
+                              >
+                                Revoke access
+                              </button>
+                            </div>
+
                             <div className="flex items-center gap-1.5">
                               <button
                                 onClick={() => handleRpcAction('complete_gift_reservation', res.id, 'completed')}
                                 type="button"
                                 className="px-3 py-2 rounded-xl text-xs font-semibold bg-white border border-parchment text-ink hover:bg-parchment-light transition-colors cursor-pointer min-h-[36px]"
                               >
-                                Mark completed
+                                Mark received
                               </button>
                               <button
                                 onClick={() => handleRpcAction('cancel_gift_reservation', res.id, 'cancelled')}
@@ -351,13 +435,13 @@ export default function NotificationsPage() {
 
                     {res?.status === 'completed' && (
                       <span className="inline-block mt-3 text-xs font-semibold text-mocha bg-parchment-light px-3 py-1 rounded-full border border-parchment">
-                        Gift Fulfilled
+                        Gift Received
                       </span>
                     )}
 
                     {res?.status === 'cancelled' && (
                       <span className="inline-block mt-3 text-xs font-medium text-ribbon bg-ribbon-light px-3 py-1 rounded-full border border-ribbon/30">
-                        Reservation Cancelled
+                        Request Declined / Cancelled
                       </span>
                     )}
                   </div>
@@ -368,16 +452,17 @@ export default function NotificationsPage() {
         </div>
       )}
 
-      {/* Share Address Modal */}
+      {/* Share Address Modal with Plain-Language Consent (Section 4.5) */}
       {shareModalResId && (
         <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="paper-tag rounded-3xl p-6 sm:p-7 max-w-md w-full md-elevation-4 space-y-4 bg-white border border-parchment">
             <div>
               <h3 className="text-lg font-serif font-bold text-ink">
-                Share Delivery Address
+                Approve and Share Delivery Address
               </h3>
-              <p className="text-xs text-slate-muted mt-0.5">
-                Select which private address to disclose to the verified gifter for this item.
+              <p className="text-xs text-slate-muted mt-1 leading-relaxed">
+                Choose which saved destination to share with this gifter.
+                Once approved, the gifter can view this address to ship your gift. You may revoke access at any time.
               </p>
             </div>
 
@@ -419,12 +504,12 @@ export default function NotificationsPage() {
                 Cancel
               </button>
               <button
-                onClick={handleShareAddress}
+                onClick={handleApproveDisclosure}
                 disabled={addresses.length === 0}
                 type="button"
                 className="posh-button-primary disabled:opacity-50 px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer min-h-[40px]"
               >
-                Confirm & Disclose Address
+                Approve and share
               </button>
             </div>
           </div>
